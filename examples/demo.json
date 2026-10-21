@@ -1,0 +1,505 @@
+{
+  "game": "FH5",
+  "package_version": "3.688.109.0",
+  "fixture_kind": "synthetic_not_captured",
+  "game_connected": false,
+  "identity": {
+    "session_key": "synthetic-demo:no-game-process",
+    "pid": null
+  },
+  "note": "Invented positions, addresses and session for offline UI tests; not live evidence.",
+  "samples": [
+    {
+      "telemetry": {
+        "position_x": 0.0,
+        "position_y": 0.0,
+        "position_z": 0.0,
+        "yaw": 0.0,
+        "speed_m_per_s": 0.0,
+        "car_ordinal": 1350
+      },
+      "candidates": [
+        {
+          "status": "experimental_coordinate_candidate",
+          "first_string_address": 1048576,
+          "session_key": "synthetic-demo:no-game-process",
+          "coordinates": [
+            -300.0,
+            0.0,
+            180.0
+          ],
+          "fingerprint": "cdd21e936a31e37e3a7e9aea89f8e7195df85cf00c58cb4682ac7e3460615fcb",
+          "row_raw": 2,
+          "loot_row_id": 2,
+          "row_padding_u32": 0,
+          "fingerprint_version": 2,
+          "coordinates_verified": false,
+          "membership_verified": false,
+          "lifetime_verified": false,
+          "experimental": true
+        },
+        {
+          "status": "experimental_coordinate_candidate",
+          "first_string_address": 1049216,
+          "session_key": "synthetic-demo:no-game-process",
+          "coordinates": [
+            -200.0,
+            0.0,
+            300.0
+          ],
+          "fingerprint": "eefc5c2344f709081939188262e5047e00277bd26301d3a791d49b5fcc7c4aa8",
+          "row_raw": 7,
+          "loot_row_id": 7,
+          "row_padding_u32": 0,
+          "fingerprint_version": 2,
+          "coordinates_verified": false,
+          "membership_verified": false,
+          "lifetime_verified": false,
+          "experimental": true
+        },
+        {
+          "status": "experimental_coordinate_candidate",
+          "first_string_address": 1049856,
+          "session_key": "synthetic-demo:no-game-process",
+          "coordinates": [
+            -100.0,
+            0.0,
+            420.0
+          ],
+          "fingerprint": "2ad23afd57e851c5a08ffcfaeb0e207ba959c1cef3cdf8fcea8873eebd8fc590",
+          "row_raw": 12,
+          "loot_row_id": 12,
+          "row_padding_u32": 0,
+          "fingerprint_version": 2,
+          "coordinates_verified": false,
+          "membership_verified": false,
+          "lifetime_verified": false,
+          "experimental": true
+        },
+        {
+          "status": "experimental_coordinate_candidate",
+          "first_string_address": 1050496,
+          "session_key": "synthetic-demo:no-game-process",
+          "coordinates": [
+            0.0,
+            0.0,
+            180.0
+          ],
+          "fingerprint": "813566d41c418b5291661f4f81cc012931db37d859bcb72de3b07e57f73be440",
+          "row_raw": 17,
+          "loot_row_id": 17,
+          "row_padding_u32": 0,
+          "fingerprint_version": 2,
+          "coordinates_verified": false,
+          "membership_verified": false,
+          "lifetime_verified": false,
+          "experimental": true
+        },
+        {
+          "status": "experimental_coordinate_candidate",
+          "first_string_address": 1051136,
+          "session_key": "synthetic-demo:no-game-process",
+          "coordinates": [
+            100.0,
+            0.0,
+            300.0
+          ],
+          "fingerprint": "e6c1a0eac4d6aaf4efed4530ec85831026297e2b21ff301bc43eb3f3c8dd6171",
+          "row_raw": 22,
+          "loot_row_id": 22,
+          "row_padding_u32": 0,
+          "fingerprint_version": 2,
+          "coordinates_verified": false,
+          "membership_verified": false,
+          "lifetime_verified": false,
+          "experimental": true
+        },
+        {
+          "status": "experimental_coordinate_candidate",
+          "first_string_address": 1051776,
+          "session_key": "synthetic-demo:no-game-process",
+          "coordinates": [
+            200.0,
+            0.0,
+            420.0
+          ],
+          "fingerprint": "2426c8819c55640eab2fc3be3359b9807bf4a7c3b946655e66d94ab3624bf413",
+          "row_raw": 27,
+          "loot_row_id": 27,
+          "row_padding_u32": 0,
+          "fingerprint_version": 2,
+          "coordinates_verified": false,
+          "membership_verified": false,
+          "lifetime_verified": false,
+          "experimental": true
+        },
+        {
+          "status": "experimental_coordinate_candidate",
+          "first_string_address": 1052416,
+          "session_key": "synthetic-demo:no-game-process",
+          "coordinates": [
+            300.0,
+            0.0,
+            180.0
+          ],
+          "fingerprint": "cddd3df13dc252bd0bef889a735c1fab1b3787088bf60df281257ab4847954d3",
+          "row_raw": 32,
+          "loot_row_id": 32,
+          "row_padding_u32": 0,
+          "fingerprint_version": 2,
+          "coordinates_verified": false,
+          "membership_verified": false,
+          "lifetime_verified": false,
+          "experimental": true
+        },
+        {
+          "status": "experimental_coordinate_candidate",
+          "first_string_address": 1053056,
+          "session_key": "synthetic-demo:no-game-process",
+          "coordinates": [
+            400.0,
+            0.0,
+            300.0
+          ],
+          "fingerprint": "e6f387726a7276a0fe49e5bde2b156f06d94e7b37195714920d0322c2c741523",
+          "row_raw": 42,
+          "loot_row_id": 42,
+          "row_padding_u32": 0,
+          "fingerprint_version": 2,
+          "coordinates_verified": false,
+          "membership_verified": false,
+          "lifetime_verified": false,
+          "experimental": true
+        }
+      ]
+    },
+    {
+      "telemetry": {
+        "position_x": 0.0,
+        "position_y": 0.0,
+        "position_z": 0.0,
+        "yaw": 0.6,
+        "speed_m_per_s": 0.0,
+        "car_ordinal": 1350
+      },
+      "candidates": [
+        {
+          "status": "experimental_coordinate_candidate",
+          "first_string_address": 1048576,
+          "session_key": "synthetic-demo:no-game-process",
+          "coordinates": [
+            -300.0,
+            0.0,
+            180.0
+          ],
+          "fingerprint": "cdd21e936a31e37e3a7e9aea89f8e7195df85cf00c58cb4682ac7e3460615fcb",
+          "row_raw": 2,
+          "loot_row_id": 2,
+          "row_padding_u32": 0,
+          "fingerprint_version": 2,
+          "coordinates_verified": false,
+          "membership_verified": false,
+          "lifetime_verified": false,
+          "experimental": true
+        },
+        {
+          "status": "experimental_coordinate_candidate",
+          "first_string_address": 1049216,
+          "session_key": "synthetic-demo:no-game-process",
+          "coordinates": [
+            -200.0,
+            0.0,
+            300.0
+          ],
+          "fingerprint": "eefc5c2344f709081939188262e5047e00277bd26301d3a791d49b5fcc7c4aa8",
+          "row_raw": 7,
+          "loot_row_id": 7,
+          "row_padding_u32": 0,
+          "fingerprint_version": 2,
+          "coordinates_verified": false,
+          "membership_verified": false,
+          "lifetime_verified": false,
+          "experimental": true
+        },
+        {
+          "status": "experimental_coordinate_candidate",
+          "first_string_address": 1049856,
+          "session_key": "synthetic-demo:no-game-process",
+          "coordinates": [
+            -100.0,
+            0.0,
+            420.0
+          ],
+          "fingerprint": "2ad23afd57e851c5a08ffcfaeb0e207ba959c1cef3cdf8fcea8873eebd8fc590",
+          "row_raw": 12,
+          "loot_row_id": 12,
+          "row_padding_u32": 0,
+          "fingerprint_version": 2,
+          "coordinates_verified": false,
+          "membership_verified": false,
+          "lifetime_verified": false,
+          "experimental": true
+        },
+        {
+          "status": "experimental_coordinate_candidate",
+          "first_string_address": 1050496,
+          "session_key": "synthetic-demo:no-game-process",
+          "coordinates": [
+            0.0,
+            0.0,
+            180.0
+          ],
+          "fingerprint": "813566d41c418b5291661f4f81cc012931db37d859bcb72de3b07e57f73be440",
+          "row_raw": 17,
+          "loot_row_id": 17,
+          "row_padding_u32": 0,
+          "fingerprint_version": 2,
+          "coordinates_verified": false,
+          "membership_verified": false,
+          "lifetime_verified": false,
+          "experimental": true
+        },
+        {
+          "status": "experimental_coordinate_candidate",
+          "first_string_address": 1051136,
+          "session_key": "synthetic-demo:no-game-process",
+          "coordinates": [
+            100.0,
+            0.0,
+            300.0
+          ],
+          "fingerprint": "e6c1a0eac4d6aaf4efed4530ec85831026297e2b21ff301bc43eb3f3c8dd6171",
+          "row_raw": 22,
+          "loot_row_id": 22,
+          "row_padding_u32": 0,
+          "fingerprint_version": 2,
+          "coordinates_verified": false,
+          "membership_verified": false,
+          "lifetime_verified": false,
+          "experimental": true
+        },
+        {
+          "status": "experimental_coordinate_candidate",
+          "first_string_address": 1051776,
+          "session_key": "synthetic-demo:no-game-process",
+          "coordinates": [
+            200.0,
+            0.0,
+            420.0
+          ],
+          "fingerprint": "2426c8819c55640eab2fc3be3359b9807bf4a7c3b946655e66d94ab3624bf413",
+          "row_raw": 27,
+          "loot_row_id": 27,
+          "row_padding_u32": 0,
+          "fingerprint_version": 2,
+          "coordinates_verified": false,
+          "membership_verified": false,
+          "lifetime_verified": false,
+          "experimental": true
+        },
+        {
+          "status": "experimental_coordinate_candidate",
+          "first_string_address": 1052416,
+          "session_key": "synthetic-demo:no-game-process",
+          "coordinates": [
+            300.0,
+            0.0,
+            180.0
+          ],
+          "fingerprint": "cddd3df13dc252bd0bef889a735c1fab1b3787088bf60df281257ab4847954d3",
+          "row_raw": 32,
+          "loot_row_id": 32,
+          "row_padding_u32": 0,
+          "fingerprint_version": 2,
+          "coordinates_verified": false,
+          "membership_verified": false,
+          "lifetime_verified": false,
+          "experimental": true
+        },
+        {
+          "status": "experimental_coordinate_candidate",
+          "first_string_address": 1053056,
+          "session_key": "synthetic-demo:no-game-process",
+          "coordinates": [
+            400.0,
+            0.0,
+            300.0
+          ],
+          "fingerprint": "e6f387726a7276a0fe49e5bde2b156f06d94e7b37195714920d0322c2c741523",
+          "row_raw": 42,
+          "loot_row_id": 42,
+          "row_padding_u32": 0,
+          "fingerprint_version": 2,
+          "coordinates_verified": false,
+          "membership_verified": false,
+          "lifetime_verified": false,
+          "experimental": true
+        }
+      ]
+    },
+    {
+      "telemetry": {
+        "position_x": 0.0,
+        "position_y": 0.0,
+        "position_z": 0.0,
+        "yaw": 1.2,
+        "speed_m_per_s": 0.0,
+        "car_ordinal": 1350
+      },
+      "candidates": [
+        {
+          "status": "experimental_coordinate_candidate",
+          "first_string_address": 1048576,
+          "session_key": "synthetic-demo:no-game-process",
+          "coordinates": [
+            -300.0,
+            0.0,
+            180.0
+          ],
+          "fingerprint": "cdd21e936a31e37e3a7e9aea89f8e7195df85cf00c58cb4682ac7e3460615fcb",
+          "row_raw": 2,
+          "loot_row_id": 2,
+          "row_padding_u32": 0,
+          "fingerprint_version": 2,
+          "coordinates_verified": false,
+          "membership_verified": false,
+          "lifetime_verified": false,
+          "experimental": true
+        },
+        {
+          "status": "experimental_coordinate_candidate",
+          "first_string_address": 1049216,
+          "session_key": "synthetic-demo:no-game-process",
+          "coordinates": [
+            -200.0,
+            0.0,
+            300.0
+          ],
+          "fingerprint": "eefc5c2344f709081939188262e5047e00277bd26301d3a791d49b5fcc7c4aa8",
+          "row_raw": 7,
+          "loot_row_id": 7,
+          "row_padding_u32": 0,
+          "fingerprint_version": 2,
+          "coordinates_verified": false,
+          "membership_verified": false,
+          "lifetime_verified": false,
+          "experimental": true
+        },
+        {
+          "status": "experimental_coordinate_candidate",
+          "first_string_address": 1049856,
+          "session_key": "synthetic-demo:no-game-process",
+          "coordinates": [
+            -100.0,
+            0.0,
+            420.0
+          ],
+          "fingerprint": "2ad23afd57e851c5a08ffcfaeb0e207ba959c1cef3cdf8fcea8873eebd8fc590",
+          "row_raw": 12,
+          "loot_row_id": 12,
+          "row_padding_u32": 0,
+          "fingerprint_version": 2,
+          "coordinates_verified": false,
+          "membership_verified": false,
+          "lifetime_verified": false,
+          "experimental": true
+        },
+        {
+          "status": "experimental_coordinate_candidate",
+          "first_string_address": 1050496,
+          "session_key": "synthetic-demo:no-game-process",
+          "coordinates": [
+            0.0,
+            0.0,
+            180.0
+          ],
+          "fingerprint": "813566d41c418b5291661f4f81cc012931db37d859bcb72de3b07e57f73be440",
+          "row_raw": 17,
+          "loot_row_id": 17,
+          "row_padding_u32": 0,
+          "fingerprint_version": 2,
+          "coordinates_verified": false,
+          "membership_verified": false,
+          "lifetime_verified": false,
+          "experimental": true
+        },
+        {
+          "status": "experimental_coordinate_candidate",
+          "first_string_address": 1051136,
+          "session_key": "synthetic-demo:no-game-process",
+          "coordinates": [
+            100.0,
+            0.0,
+            300.0
+          ],
+          "fingerprint": "e6c1a0eac4d6aaf4efed4530ec85831026297e2b21ff301bc43eb3f3c8dd6171",
+          "row_raw": 22,
+          "loot_row_id": 22,
+          "row_padding_u32": 0,
+          "fingerprint_version": 2,
+          "coordinates_verified": false,
+          "membership_verified": false,
+          "lifetime_verified": false,
+          "experimental": true
+        },
+        {
+          "status": "experimental_coordinate_candidate",
+          "first_string_address": 1051776,
+          "session_key": "synthetic-demo:no-game-process",
+          "coordinates": [
+            200.0,
+            0.0,
+            420.0
+          ],
+          "fingerprint": "2426c8819c55640eab2fc3be3359b9807bf4a7c3b946655e66d94ab3624bf413",
+          "row_raw": 27,
+          "loot_row_id": 27,
+          "row_padding_u32": 0,
+          "fingerprint_version": 2,
+          "coordinates_verified": false,
+          "membership_verified": false,
+          "lifetime_verified": false,
+          "experimental": true
+        },
+        {
+          "status": "experimental_coordinate_candidate",
+          "first_string_address": 1052416,
+          "session_key": "synthetic-demo:no-game-process",
+          "coordinates": [
+            300.0,
+            0.0,
+            180.0
+          ],
+          "fingerprint": "cddd3df13dc252bd0bef889a735c1fab1b3787088bf60df281257ab4847954d3",
+          "row_raw": 32,
+          "loot_row_id": 32,
+          "row_padding_u32": 0,
+          "fingerprint_version": 2,
+          "coordinates_verified": false,
+          "membership_verified": false,
+          "lifetime_verified": false,
+          "experimental": true
+        },
+        {
+          "status": "experimental_coordinate_candidate",
+          "first_string_address": 1053056,
+          "session_key": "synthetic-demo:no-game-process",
+          "coordinates": [
+            400.0,
+            0.0,
+            300.0
+          ],
+          "fingerprint": "e6f387726a7276a0fe49e5bde2b156f06d94e7b37195714920d0322c2c741523",
+          "row_raw": 42,
+          "loot_row_id": 42,
+          "row_padding_u32": 0,
+          "fingerprint_version": 2,
+          "coordinates_verified": false,
+          "membership_verified": false,
+          "lifetime_verified": false,
+          "experimental": true
+        }
+      ]
+    }
+  ]
+}

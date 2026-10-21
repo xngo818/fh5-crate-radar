@@ -1,0 +1,144 @@
+{
+  "schema_version": 1,
+  "game": "FH5",
+  "source": "names already present in the minimal identity mapping",
+  "key_semantics": "CarID; not LootRowId",
+  "car_count": 45,
+  "cars": {
+    "1591": {
+      "name": "1984 Peugeot 205 Turbo 16"
+    },
+    "1231": {
+      "name": "2010 Volkswagen Golf R"
+    },
+    "260": {
+      "name": "1973 Porsche 911 Carrera RS"
+    },
+    "420": {
+      "name": "2003 Audi RS 6"
+    },
+    "3183": {
+      "name": "1967 Ford Racing Escort Mk1"
+    },
+    "633": {
+      "name": "1983 Audi Sport quattro"
+    },
+    "2019": {
+      "name": "2003 Ford Focus RS"
+    },
+    "2872": {
+      "name": "2019 Hyundai Veloster N"
+    },
+    "3187": {
+      "name": "2018 Porsche Macan LPR Rally Raid"
+    },
+    "2586": {
+      "name": "2015 Volvo V60 Polestar"
+    },
+    "1350": {
+      "name": "2011 BMW X5 M"
+    },
+    "2179": {
+      "name": "2015 Audi S1"
+    },
+    "1323": {
+      "name": "2011 SUBARU WRX STI"
+    },
+    "1009": {
+      "name": "2008 Mitsubishi Lancer Evolution X GSR"
+    },
+    "3132": {
+      "name": "2018 MINI X-Raid John Cooper Works Buggy"
+    },
+    "3188": {
+      "name": "1989 Porsche #65 Rothsport Racing 911 'Desert Flyer'"
+    },
+    "2865": {
+      "name": "2017 Maserati Levante S"
+    },
+    "3404": {
+      "name": "2020 Ford #2069 Ford Performance Bronco R"
+    },
+    "3109": {
+      "name": "2018 DeBerti F-150 Prerunner Truck"
+    },
+    "2357": {
+      "name": "2017 Ford Focus RS"
+    },
+    "2009": {
+      "name": "2013 Audi RS 7 Sportback"
+    },
+    "3031": {
+      "name": "1985 Porsche #185 959 Prodrive Rally Raid"
+    },
+    "2515": {
+      "name": "2011 Penhall The Cholla"
+    },
+    "3089": {
+      "name": "2018 Exomotive Exocet Off-Road"
+    },
+    "2430": {
+      "name": "2016 Ariel Nomad"
+    },
+    "2742": {
+      "name": "2016 Jeep Trailcat"
+    },
+    "3064": {
+      "name": "2018 Mercedes-AMG GT 4-Door Coupe"
+    },
+    "2793": {
+      "name": "1967 Ferrari #24 Ferrari Spa 330 P4"
+    },
+    "3489": {
+      "name": "2021 Ford Bronco"
+    },
+    "2773": {
+      "name": "2018 Porsche Cayenne Turbo"
+    },
+    "2147": {
+      "name": "1986 MG Metro 6R4"
+    },
+    "2618": {
+      "name": "2017 Nissan GT-R (R35)"
+    },
+    "1173": {
+      "name": "2010 Lamborghini Murcielago LP 670-4 SV"
+    },
+    "2663": {
+      "name": "2016 RJ Anderson #37 Polaris RZR-Rockstar Energy Pro 2 Truck"
+    },
+    "2739": {
+      "name": "2017 Chevrolet Camaro ZL1"
+    },
+    "2937": {
+      "name": "2017 Ford #14 Rahal Letterman Lanigan Racing GRC Fiesta"
+    },
+    "2984": {
+      "name": "1991 Hoonigan Gymkhana 10 Ford Escort Cosworth Group A"
+    },
+    "2841": {
+      "name": "2018 Jeep Grand Cherokee Trackhawk"
+    },
+    "3007": {
+      "name": "2017 Volkswagen #34 Volkswagen Andretti Rallycross Beetle"
+    },
+    "3115": {
+      "name": "2016 Hoonigan Gymkhana 10 Ford Focus RS RX"
+    },
+    "3119": {
+      "name": "1986 Hoonigan Ford RS200 Evolution"
+    },
+    "3650": {
+      "name": "2021 Mercedes-AMG Mercedes-AMG ONE"
+    },
+    "2616": {
+      "name": "2016 Lamborghini Centenario LP 770-4"
+    },
+    "2935": {
+      "name": "2018 Funco Motorsports F9"
+    },
+    "3128": {
+      "name": "2017 Ford #25 'Brocky' Ultra4 Bronco RTR"
+    }
+  }
+}

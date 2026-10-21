@@ -1,0 +1,77 @@
+{
+  "date": "2026-10-21",
+  "source_unit_tests": 267,
+  "unit_failures": 0,
+  "game_connected": false,
+  "fixture": "examples/demo.json",
+  "fixture_kind": "synthetic_not_captured",
+  "exe_sha256": "9952ab387bfe07efc609da9b019c439d279c9e7dece3bccb514da15023b39fa6",
+  "exe_bytes": 12489107,
+  "checks": [
+    {
+      "mode": "source",
+      "route": "radar_headless",
+      "exit_code": 0,
+      "frames": 2,
+      "rows": 8,
+      "passed": true
+    },
+    {
+      "mode": "source",
+      "route": "map_headless",
+      "exit_code": 0,
+      "frames": 2,
+      "rows": 8,
+      "passed": true
+    },
+    {
+      "mode": "source",
+      "route": "radar_ui",
+      "exit_code": 0,
+      "frames": 2,
+      "rows": 8,
+      "passed": true
+    },
+    {
+      "mode": "source",
+      "route": "map_ui",
+      "exit_code": 0,
+      "frames": 2,
+      "rows": 8,
+      "passed": true
+    },
+    {
+      "mode": "frozen",
+      "route": "radar_headless",
+      "exit_code": 0,
+      "frames": 2,
+      "rows": 8,
+      "passed": true
+    },
+    {
+      "mode": "frozen",
+      "route": "map_headless",
+      "exit_code": 0,
+      "frames": 2,
+      "rows": 8,
+      "passed": true
+    },
+    {
+      "mode": "frozen",
+      "route": "radar_ui",
+      "exit_code": 0,
+      "frames": 2,
+      "rows": 8,
+      "passed": true
+    },
+    {
+      "mode": "frozen",
+      "route": "map_ui",
+      "exit_code": 0,
+      "frames": 2,
+      "rows": 8,
+      "passed": true
+    }
+  ],
+  "result": "passed"
+}
