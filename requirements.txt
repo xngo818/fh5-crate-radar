@@ -1,0 +1,2 @@
+# Runtime: Python 3.12 standard library only.
+# Install Python with Tcl/Tk support to use the desktop interface.

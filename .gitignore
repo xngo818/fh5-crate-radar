@@ -1,0 +1,79 @@
+# Python and local environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Build output and executable archives
+build/
+dist/
+dist_*/
+acceptance_dist/
+.fh5_build*/
+*.spec
+*.exe
+*.dll
+*.pyd
+*.zip
+*.7z
+
+# Real captures, runtime state, memory dumps and local scan scopes
+sessions/
+state/
+captures/
+dumps/
+research/
+reverse_analysis/
+data/identity_research/*
+!data/identity_research/official_car_names.json
+*.dmp
+*.mem
+*.raw
+*.bin
+*.log
+*.jsonl
+**/*seed_scope*.json
+**/*address*.json
+**/*session*.json
+**/*live_sync*.json
+
+# Secrets and local authorization state
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.pfx
+*.p12
+**/*licence*.json
+**/*license*.json
+**/*vault*.json
+**/*token*.json
+**/*secret*.json
+
+# Modules and tools outside the public FH5 source set
+/fh6*.py
+/crack_bootstrap.py
+/licence.py
+/vault.py
+ForzaTech-crypto-tool/
+.reverse*/
+
+# Original game graphics are not part of this distribution
+data/tier_icons/
+data/map_textures/
+data/map_backgrounds/
+
+# Editor/OS files
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini
+.DS_Store
+*.tmp
+*.bak
