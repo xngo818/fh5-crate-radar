@@ -86,13 +86,6 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Build_Windows.ps1
 
 构建输出为 `dist/FH5CrateRadar.exe`。请使用 Python 3.12 x64 在 Windows 上构建。离线测试、EXE 构建成功和真实游戏接入是不同的验证结果；发布时应分别说明。
 
-## 用 GitHub 网页上传
-
-1. 在 GitHub 创建空仓库，例如 `fh5-crate-radar`；已有的 README 和 LICENSE 随本目录一起提供，无需再生成一份。
-2. 进入仓库，选择 **Add file → Upload files**（空仓库可选 **uploading an existing file**），上传本目录内的源码、`data`、`docs`、`examples`、`tests` 和根目录文件。让 `fh5_app.py` 与 `README.md` 位于仓库根目录，记得包含 `.gitignore`。
-3. 检查上传列表，填写提交说明并提交；完成后在仓库首页确认 README、源码和演示文件均可打开。[GitHub 上传说明](https://docs.github.com/en/repositories/working-with-files/managing-files/adding-a-file-to-a-repository)
-
-网页上传前需自行核对列表，不能依赖 `.gitignore` 替网页筛选文件。只上传这份公开副本；不上传旧 EXE、真实采样、内存转储、会话状态、地址/扫描范围配置、授权密钥、旧 FH6 模块或第三方研究工具。构建产生的 `build`、`dist`、虚拟环境和缓存也不属于源码上传内容。
 
 ## 来源、许可与使用规则
 
