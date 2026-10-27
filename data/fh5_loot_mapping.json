@@ -1,0 +1,457 @@
+{
+  "package_version": "3.688.109.0",
+  "row_kind": "uint32_at_F_minus_8",
+  "entries": {
+    "2": {
+      "status": "verified",
+      "value": 2,
+      "car_id": 1591,
+      "car": "1984 Peugeot 205 Turbo 16",
+      "level": 2,
+      "evidence": [
+        "docs/SUPPORTED_BUILD.md#identity-mapping"
+      ]
+    },
+    "3": {
+      "status": "verified",
+      "value": 3,
+      "car_id": 1231,
+      "car": "2010 Volkswagen Golf R",
+      "level": 2,
+      "evidence": [
+        "docs/SUPPORTED_BUILD.md#identity-mapping"
+      ]
+    },
+    "4": {
+      "status": "verified",
+      "value": 4,
+      "car_id": 260,
+      "car": "1973 Porsche 911 Carrera RS",
+      "level": 2,
+      "evidence": [
+        "docs/SUPPORTED_BUILD.md#identity-mapping"
+      ]
+    },
+    "5": {
+      "status": "verified",
+      "value": 5,
+      "car_id": 420,
+      "car": "2003 Audi RS 6",
+      "level": 2,
+      "evidence": [
+        "docs/SUPPORTED_BUILD.md#identity-mapping"
+      ]
+    },
+    "6": {
+      "status": "verified",
+      "value": 6,
+      "car_id": 3183,
+      "car": "1967 Ford Racing Escort Mk1",
+      "level": 2,
+      "evidence": [
+        "docs/SUPPORTED_BUILD.md#identity-mapping"
+      ]
+    },
+    "7": {
+      "status": "verified",
+      "value": 7,
+      "car_id": 633,
+      "car": "1983 Audi Sport quattro",
+      "level": 3,
+      "evidence": [
+        "docs/SUPPORTED_BUILD.md#identity-mapping"
+      ]
+    },
+    "8": {
+      "status": "verified",
+      "value": 8,
+      "car_id": 2019,
+      "car": "2003 Ford Focus RS",
+      "level": 3,
+      "evidence": [
+        "docs/SUPPORTED_BUILD.md#identity-mapping"
+      ]
+    },
+    "9": {
+      "status": "verified",
+      "value": 9,
+      "car_id": 2872,
+      "car": "2019 Hyundai Veloster N",
+      "level": 3,
+      "evidence": [
+        "docs/SUPPORTED_BUILD.md#identity-mapping"
+      ]
+    },
+    "10": {
+      "status": "verified",
+      "value": 10,
+      "car_id": 3187,
+      "car": "2018 Porsche Macan LPR Rally Raid",
+      "level": 3,
+      "evidence": [
+        "docs/SUPPORTED_BUILD.md#identity-mapping"
+      ]
+    },
+    "11": {
+      "status": "verified",
+      "value": 11,
+      "car_id": 2586,
+      "car": "2015 Volvo V60 Polestar",
+      "level": 3,
+      "evidence": [
+        "docs/SUPPORTED_BUILD.md#identity-mapping"
+      ]
+    },
+    "12": {
+      "status": "verified",
+      "value": 12,
+      "car_id": 1350,
+      "car": "2011 BMW X5 M",
+      "level": 4,
+      "evidence": [
+        "docs/SUPPORTED_BUILD.md#identity-mapping"
+      ]
+    },
+    "13": {
+      "status": "verified",
+      "value": 13,
+      "car_id": 2179,
+      "car": "2015 Audi S1",
+      "level": 4,
+      "evidence": [
+        "docs/SUPPORTED_BUILD.md#identity-mapping"
+      ]
+    },
+    "14": {
+      "status": "verified",
+      "value": 14,
+      "car_id": 1323,
+      "car": "2011 SUBARU WRX STI",
+      "level": 4,
+      "evidence": [
+        "docs/SUPPORTED_BUILD.md#identity-mapping"
+      ]
+    },
+    "15": {
+      "status": "verified",
+      "value": 15,
+      "car_id": 1009,
+      "car": "2008 Mitsubishi Lancer Evolution X GSR",
+      "level": 4,
+      "evidence": [
+        "docs/SUPPORTED_BUILD.md#identity-mapping"
+      ]
+    },
+    "16": {
+      "status": "verified",
+      "value": 16,
+      "car_id": 3132,
+      "car": "2018 MINI X-Raid John Cooper Works Buggy",
+      "level": 4,
+      "evidence": [
+        "docs/SUPPORTED_BUILD.md#identity-mapping"
+      ]
+    },
+    "17": {
+      "status": "verified",
+      "value": 17,
+      "car_id": 3188,
+      "car": "1989 Porsche #65 Rothsport Racing 911 'Desert Flyer'",
+      "level": 5,
+      "evidence": [
+        "docs/SUPPORTED_BUILD.md#identity-mapping"
+      ]
+    },
+    "18": {
+      "status": "verified",
+      "value": 18,
+      "car_id": 2865,
+      "car": "2017 Maserati Levante S",
+      "level": 5,
+      "evidence": [
+        "docs/SUPPORTED_BUILD.md#identity-mapping"
+      ]
+    },
+    "19": {
+      "status": "verified",
+      "value": 19,
+      "car_id": 3404,
+      "car": "2020 Ford #2069 Ford Performance Bronco R",
+      "level": 5,
+      "evidence": [
+        "docs/SUPPORTED_BUILD.md#identity-mapping"
+      ]
+    },
+    "20": {
+      "status": "verified",
+      "value": 20,
+      "car_id": 3109,
+      "car": "2018 DeBerti F-150 Prerunner Truck",
+      "level": 5,
+      "evidence": [
+        "docs/SUPPORTED_BUILD.md#identity-mapping"
+      ]
+    },
+    "21": {
+      "status": "verified",
+      "value": 21,
+      "car_id": 2357,
+      "car": "2017 Ford Focus RS",
+      "level": 5,
+      "evidence": [
+        "docs/SUPPORTED_BUILD.md#identity-mapping"
+      ]
+    },
+    "22": {
+      "status": "verified",
+      "value": 22,
+      "car_id": 2009,
+      "car": "2013 Audi RS 7 Sportback",
+      "level": 6,
+      "evidence": [
+        "docs/SUPPORTED_BUILD.md#identity-mapping"
+      ]
+    },
+    "23": {
+      "status": "verified",
+      "value": 23,
+      "car_id": 3031,
+      "car": "1985 Porsche #185 959 Prodrive Rally Raid",
+      "level": 6,
+      "evidence": [
+        "docs/SUPPORTED_BUILD.md#identity-mapping"
+      ]
+    },
+    "24": {
+      "status": "verified",
+      "value": 24,
+      "car_id": 2515,
+      "car": "2011 Penhall The Cholla",
+      "level": 6,
+      "evidence": [
+        "docs/SUPPORTED_BUILD.md#identity-mapping"
+      ]
+    },
+    "25": {
+      "status": "verified",
+      "value": 25,
+      "car_id": 3089,
+      "car": "2018 Exomotive Exocet Off-Road",
+      "level": 6,
+      "evidence": [
+        "docs/SUPPORTED_BUILD.md#identity-mapping"
+      ]
+    },
+    "26": {
+      "status": "verified",
+      "value": 26,
+      "car_id": 2430,
+      "car": "2016 Ariel Nomad",
+      "level": 6,
+      "evidence": [
+        "docs/SUPPORTED_BUILD.md#identity-mapping"
+      ]
+    },
+    "27": {
+      "status": "verified",
+      "value": 27,
+      "car_id": 2742,
+      "car": "2016 Jeep Trailcat",
+      "level": 7,
+      "evidence": [
+        "docs/SUPPORTED_BUILD.md#identity-mapping"
+      ]
+    },
+    "28": {
+      "status": "verified",
+      "value": 28,
+      "car_id": 3064,
+      "car": "2018 Mercedes-AMG GT 4-Door Coupe",
+      "level": 7,
+      "evidence": [
+        "docs/SUPPORTED_BUILD.md#identity-mapping"
+      ]
+    },
+    "29": {
+      "status": "verified",
+      "value": 29,
+      "car_id": 2793,
+      "car": "1967 Ferrari #24 Ferrari Spa 330 P4",
+      "level": 7,
+      "evidence": [
+        "docs/SUPPORTED_BUILD.md#identity-mapping"
+      ]
+    },
+    "30": {
+      "status": "verified",
+      "value": 30,
+      "car_id": 3489,
+      "car": "2021 Ford Bronco",
+      "level": 7,
+      "evidence": [
+        "docs/SUPPORTED_BUILD.md#identity-mapping"
+      ]
+    },
+    "31": {
+      "status": "verified",
+      "value": 31,
+      "car_id": 2773,
+      "car": "2018 Porsche Cayenne Turbo",
+      "level": 7,
+      "evidence": [
+        "docs/SUPPORTED_BUILD.md#identity-mapping"
+      ]
+    },
+    "32": {
+      "status": "verified",
+      "value": 32,
+      "car_id": 2147,
+      "car": "1986 MG Metro 6R4",
+      "level": 8,
+      "evidence": [
+        "docs/SUPPORTED_BUILD.md#identity-mapping"
+      ]
+    },
+    "33": {
+      "status": "verified",
+      "value": 33,
+      "car_id": 2618,
+      "car": "2017 Nissan GT-R (R35)",
+      "level": 8,
+      "evidence": [
+        "docs/SUPPORTED_BUILD.md#identity-mapping"
+      ]
+    },
+    "34": {
+      "status": "verified",
+      "value": 34,
+      "car_id": 1173,
+      "car": "2010 Lamborghini Murcielago LP 670-4 SV",
+      "level": 8,
+      "evidence": [
+        "docs/SUPPORTED_BUILD.md#identity-mapping"
+      ]
+    },
+    "35": {
+      "status": "verified",
+      "value": 35,
+      "car_id": 2663,
+      "car": "2016 RJ Anderson #37 Polaris RZR-Rockstar Energy Pro 2 Truck",
+      "level": 8,
+      "evidence": [
+        "docs/SUPPORTED_BUILD.md#identity-mapping"
+      ]
+    },
+    "36": {
+      "status": "verified",
+      "value": 36,
+      "car_id": 2739,
+      "car": "2017 Chevrolet Camaro ZL1",
+      "level": 8,
+      "evidence": [
+        "docs/SUPPORTED_BUILD.md#identity-mapping"
+      ]
+    },
+    "37": {
+      "status": "verified",
+      "value": 37,
+      "car_id": 2937,
+      "car": "2017 Ford #14 Rahal Letterman Lanigan Racing GRC Fiesta",
+      "level": 9,
+      "evidence": [
+        "docs/SUPPORTED_BUILD.md#identity-mapping"
+      ]
+    },
+    "38": {
+      "status": "verified",
+      "value": 38,
+      "car_id": 2984,
+      "car": "1991 Hoonigan Gymkhana 10 Ford Escort Cosworth Group A",
+      "level": 9,
+      "evidence": [
+        "docs/SUPPORTED_BUILD.md#identity-mapping"
+      ]
+    },
+    "39": {
+      "status": "verified",
+      "value": 39,
+      "car_id": 2841,
+      "car": "2018 Jeep Grand Cherokee Trackhawk",
+      "level": 9,
+      "evidence": [
+        "docs/SUPPORTED_BUILD.md#identity-mapping"
+      ]
+    },
+    "40": {
+      "status": "verified",
+      "value": 40,
+      "car_id": 3007,
+      "car": "2017 Volkswagen #34 Volkswagen Andretti Rallycross Beetle",
+      "level": 9,
+      "evidence": [
+        "docs/SUPPORTED_BUILD.md#identity-mapping"
+      ]
+    },
+    "41": {
+      "status": "verified",
+      "value": 41,
+      "car_id": 3115,
+      "car": "2016 Hoonigan Gymkhana 10 Ford Focus RS RX",
+      "level": 9,
+      "evidence": [
+        "docs/SUPPORTED_BUILD.md#identity-mapping"
+      ]
+    },
+    "42": {
+      "status": "verified",
+      "value": 42,
+      "car_id": 3119,
+      "car": "1986 Hoonigan Ford RS200 Evolution",
+      "level": 10,
+      "evidence": [
+        "docs/SUPPORTED_BUILD.md#identity-mapping"
+      ]
+    },
+    "43": {
+      "status": "verified",
+      "value": 43,
+      "car_id": 3650,
+      "car": "2021 Mercedes-AMG Mercedes-AMG ONE",
+      "level": 10,
+      "evidence": [
+        "docs/SUPPORTED_BUILD.md#identity-mapping"
+      ]
+    },
+    "44": {
+      "status": "verified",
+      "value": 44,
+      "car_id": 2616,
+      "car": "2016 Lamborghini Centenario LP 770-4",
+      "level": 10,
+      "evidence": [
+        "docs/SUPPORTED_BUILD.md#identity-mapping"
+      ]
+    },
+    "45": {
+      "status": "verified",
+      "value": 45,
+      "car_id": 2935,
+      "car": "2018 Funco Motorsports F9",
+      "level": 10,
+      "evidence": [
+        "docs/SUPPORTED_BUILD.md#identity-mapping"
+      ]
+    },
+    "46": {
+      "status": "verified",
+      "value": 46,
+      "car_id": 3128,
+      "car": "2017 Ford #25 'Brocky' Ultra4 Bronco RTR",
+      "level": 10,
+      "evidence": [
+        "docs/SUPPORTED_BUILD.md#identity-mapping"
+      ]
+    }
+  },
+  "provenance": "docs/SUPPORTED_BUILD.md#identity-mapping"
+}

@@ -6,6 +6,7 @@ coverage, the reference height and row identities are not inferred from counts.
 from __future__ import annotations
 
 from copy import deepcopy
+from bisect import bisect_right
 import json
 import math
 from pathlib import Path
@@ -56,6 +57,45 @@ def ranges_for_candidates(candidates):
                          for c in candidates])
 
 
+def recent_ranges(existing, additions, *, byte_limit=8 * 1048576, range_limit=256):
+    """Keep recent page-aligned search hints bounded, including in memory."""
+    kept, remaining = [], byte_limit
+    for low, high in list(reversed(additions)) + list(existing):
+        if (type(low) is not int or type(high) is not int
+                or not 0x10000 < low < high < 0x7fffffffffff
+                or low % 4096 or high % 4096):
+            continue
+        # Subtract newer coverage before adding old bytes. Expanding an older
+        # overlapping range and then truncating its high end could evict the
+        # very newest slot when the byte cap is reached.
+        fragments = [[low, high]]
+        for begin, end in kept:
+            fragments = [part for a, b in fragments for part in
+                         ([[a, b]] if end <= a or begin >= b else
+                          ([[a, begin]] if a < begin else []) + ([[end, b]] if end < b else []))]
+        for begin, end in fragments:
+            size = min(end - begin, remaining) & ~4095
+            if size:
+                remaining -= size
+                finish = begin + size
+                # Existing fragments are disjoint and nonadjacent. Only the
+                # two boundaries can join older hints; one linear pass avoids
+                # re-sorting and comparing every merged range to every hint.
+                touching = [i for i, pair in enumerate(kept)
+                            if pair[1] == begin or finish == pair[0]]
+                if touching:
+                    low = min([begin] + [kept[i][0] for i in touching])
+                    high = max([finish] + [kept[i][1] for i in touching])
+                    position = min(touching)
+                    kept = [pair for i, pair in enumerate(kept) if i not in touching]
+                    kept.insert(position, [low, high])
+                else:
+                    kept.append([begin, finish])
+            if len(kept) >= range_limit or remaining < 4096:
+                return kept[:range_limit]
+    return kept
+
+
 def package_version(image_path):
     """Read an accessible manifest, never the protected executable payload."""
     # A manifest from another installed copy must never authorize this image.
@@ -79,8 +119,13 @@ class LimitedRead:
         self.remaining = byte_limit
         self.read_calls = self.read_bytes = 0
 
+    def checkpoint(self):
+        if self.stop.is_set() or time.monotonic() >= self.deadline:
+            raise StepEnded()
+
     def __call__(self, address, size):
-        if self.stop.is_set() or time.monotonic() >= self.deadline or size > self.remaining:
+        self.checkpoint()
+        if size > self.remaining:
             raise StepEnded()
         self.remaining -= size
         self.read_calls += 1
@@ -100,6 +145,14 @@ class Locator:
         self.attempted = 0
         self.failed = 0
         self.complete = False
+        self._clear_chunk()
+
+    def _clear_chunk(self):
+        self._chunk_address = None
+        self._chunk_data = None
+        self._chunk_size = 0
+        self._chunk_state = {}
+        self._chunk_allocation = None
 
     def step(self, process, stop, *, seconds=.12, byte_limit=128 * 1024 * 1024):
         if self.complete:
@@ -118,15 +171,25 @@ class Locator:
                     self.address = None
                     continue
                 size = min(512 * 1024, high - address)
-                data = reader(address, size)
-                self.attempted += size
-                # Keep this cursor until the whole chunk has been considered.
-                # A deadline during validation causes a retry, not a false gap.
-                if data is not None:
-                    found.extend(candidates_from_chunk(reader, address, data))
-                else:
-                    self.failed += 1
-                self.address = high if address + size >= high else address + size - 32
+                if self._chunk_address != address:
+                    data = reader(address, size)
+                    self.attempted += size
+                    self._chunk_address, self._chunk_data = address, data
+                    self._chunk_size = size
+                    self._chunk_state = {}
+                    self._chunk_allocation = region.get('allocation_base')
+                    if data is None:
+                        self.failed += 1
+                # Preserve both payload and the current marker/stride on a
+                # deadline. Restarting a dense chunk could otherwise never
+                # reach its later candidates, regardless of total scan time.
+                if self._chunk_data is not None:
+                    found.extend(candidates_from_chunk(reader, address, self._chunk_data,
+                                                       state=self._chunk_state,
+                                                       check_budget=getattr(reader, 'checkpoint', None)))
+                self.address = (high if address + self._chunk_size >= high
+                                else address + self._chunk_size - 32)
+                self._clear_chunk()
                 # Keep the telemetry/UI workers responsive during discovery.
                 time.sleep(0)
             self.complete = True
@@ -140,7 +203,464 @@ class Locator:
                 'region_count': len(self.regions or []),
                 'eligible_mib': round(sum(r['size'] for r in self.regions or []) / 1048576, 1),
                 'failed_chunks': self.failed, 'complete_selected_policy': self.complete,
+                'scan_address': (self.address or self.regions[self.index]['base']
+                                 if self.regions and self.index < len(self.regions) else None),
+                'pending_hit_offset': self._chunk_state.get('position'),
+                'pending_stride_index': self._chunk_state.get('stride_index'),
                 'complete_world_coverage': False}
+
+    def reconcile(self, regions):
+        """Refresh eligible metadata without restarting the global frontier.
+
+        New/changed regions are returned for a separate revisit lane, including
+        allocations below the retained frontier. This does not validate rows.
+        """
+        regions = sorted(regions, key=lambda region: region['base'])
+        if self.regions is None:
+            self.reset(regions)
+            return []
+        old = {r['base']: r for r in self.regions}
+        changed = [r for r in regions if old.get(r['base']) != r]
+        if self.index < len(self.regions):
+            frontier = self.address or self.regions[self.index]['base']
+        else:
+            frontier = max((r['base'] + r['size'] for r in self.regions), default=0)
+        self.regions = deepcopy(regions)
+        self.index = next((i for i, r in enumerate(self.regions)
+                           if r['base'] + r['size'] > frontier), len(self.regions))
+        self.address = (max(frontier, self.regions[self.index]['base'])
+                        if self.index < len(self.regions) else None)
+        self.complete = self.index >= len(self.regions)
+        if (self._chunk_address is not None and
+                (self.complete or self.regions[self.index].get('allocation_base') != self._chunk_allocation
+                 or self._chunk_address < self.regions[self.index]['base']
+                 or self._chunk_address + len(self._chunk_data or b'') >
+                    self.regions[self.index]['base'] + self.regions[self.index]['size'])):
+            self._clear_chunk()
+        return changed
+
+    def enqueue(self, regions, *, limit=256, byte_limit=8 * 1048576):
+        """Append work without losing a partially scanned current chunk."""
+        if self.complete:
+            self.reset([])
+        pending = self.regions[self.index:] if self.regions else []
+        known = {(r['base'], r.get('allocation_base')): r for r in pending}
+        additions, accepted = [], {}
+        remaining = max(0, byte_limit - sum(r['size'] for r in pending))
+        for region in regions:
+            if remaining <= 0 or len(pending) + len(additions) >= limit:
+                break
+            key = region['base'], region.get('allocation_base')
+            if key in known:
+                accepted[key] = min(region['size'], known[key]['size'])
+                continue
+            if key not in known and remaining > 0 and len(pending) + len(additions) < limit:
+                # The planner retains each owner's remaining extent and
+                # supplies bounded consecutive windows, never just its head.
+                clipped = deepcopy(region)
+                clipped['size'] = min(region['size'], remaining, 2 * 1048576)
+                if 'end' in clipped:
+                    clipped['end'] = clipped['base'] + clipped['size']
+                additions.append(clipped)
+                known[key] = clipped
+                accepted[key] = clipped['size']
+                remaining -= clipped['size']
+        self.regions = pending + additions[:max(0, limit - len(pending))]
+        self.index = 0
+        self.complete = not self.regions
+        return accepted
+
+    def prune(self, regions):
+        """Discard obsolete priority metadata, retaining an eligible cursor."""
+        pending = self.regions[self.index:] if self.regions and not self.complete else []
+        bases = [r['base'] for r in regions]
+        retained = []
+        for region in pending:
+            index = bisect_right(bases, region['base']) - 1
+            if index < 0:
+                continue
+            current = regions[index]
+            if (region['base'] + region['size'] <= current['base'] + current['size']
+                    and region.get('allocation_base') == current.get('allocation_base')):
+                retained.append(region)
+        if not pending or not retained or retained[0] is not pending[0]:
+            self.address = None
+            self._clear_chunk()
+        self.regions, self.index = retained, 0
+        self.complete = not retained
+
+
+def region_shape(region):
+    """Address-free ordering hint; never authorizes a memory read or a row."""
+    size, kind, protect = (region.get(key) for key in ('size', 'type', 'protect'))
+    if (type(size) is int and 256 * 1024 <= size <= 16 * 1048576
+            and size % 4096 == 0 and type(kind) is int and type(protect) is int
+            and kind == 0x20000 and protect == 4):
+        return size, kind, protect
+    return None
+
+
+class DiscoveryPlanner:
+    """Bounded local recovery plus a continuing global sweep.
+
+    All hints are session-local metadata. Only CandidatePool's complete
+    before/after read can produce a sample. An in-progress empty-world sweep
+    keeps bounded fast slices; cooldown increases only between complete empty
+    passes, so a later match cannot inherit a slow unfinished global scan.
+    """
+    def __init__(self, ranges, now, region_shapes=()):
+        self.ranges = recent_ranges([], ranges)
+        self.locator = Locator()
+        self.priority = Locator([])
+        self.preferred = Locator([])
+        self._preferred_regions = []
+        self.preferred_passes = 0
+        self.next_preferred = 0.0
+        self._preferred_turn = True
+        self.scope = Locator(self._scope_regions()) if self.ranges else None
+        self.recent_slots = []
+        self.next_metadata = self.next_scope = self.next_global = self.next_priority = 0.0
+        self.metadata_at = None
+        self.metadata_refreshes = self.full_scan_generation = 0
+        self.metadata_refresh_error = None
+        self.metadata_refresh_failures = 0
+        self._metadata_failure_streak = 0
+        self._region_bases = []
+        self.last_fresh = None
+        self.empty_since = now
+        self.burst_until = now + 6.0
+        self.reason = 'initial_discovery'
+        self.mode = 'recovery_burst'
+        self._revisit_recent = False
+        self._priority_turn = True
+        self._global_steps_since_priority = 0
+        self._search_pass_pending = True
+        self._empty_passes = 0
+        # References only to current eligible metadata, never coordinate
+        # samples. Its size is bounded by the native region-query cap and it is
+        # pruned on each metadata refresh. Payload work remains <=8 MiB/256.
+        self._deferred = {}
+        self.region_shapes = list(dict.fromkeys(tuple(s) for s in region_shapes))[:16]
+        self.region_shapes_dirty = False
+        self.cold_rounds = 0
+        self.next_cold = 0.0
+
+    def _scope_regions(self):
+        return [{'base': low, 'size': high - low} for low, high in sorted(self.ranges)]
+
+    def request_recovery(self, now, reason):
+        self.burst_until = max(self.burst_until, now + 3.0)
+        self.next_metadata = self.next_scope = self.next_priority = self.next_global = 0.0
+        self.next_preferred = 0.0
+        self.reason = reason
+        self._revisit_recent = True
+        self._search_pass_pending = True
+        self._empty_passes = 0
+
+    def _nearby_ranges(self, first):
+        regions = self.locator.regions or []
+        index = bisect_right(self._region_bases, first) - 1
+        if index < 0 or first >= regions[index]['base'] + regions[index]['size']:
+            return []
+        owner = regions[index]
+        allocation = owner.get('allocation_base')
+        low, high = (first - 128 * 1024) & ~4095, (first + 128 * 1024 + 4095) & ~4095
+        hints = []
+        start = max(0, bisect_right(self._region_bases, low) - 1)
+        for region in regions[start:]:
+            if region['base'] >= high:
+                break
+            # Only enumerated eligible pages in the same allocation are hints;
+            # no guessed object pointers, protected-page fallbacks or writes.
+            if region is not owner and (not allocation or region.get('allocation_base') != allocation):
+                continue
+            begin, end = max(low, region['base']), min(high, region['base'] + region['size'])
+            if begin < end:
+                hints.append([begin, end])
+        return hints
+
+    def observe_rows(self, rows):
+        additions = []
+        for row in rows:
+            first = row.get('first_string_address')
+            if type(first) is not int or not 0x10000 < first < 0x7fffffffffff or first % 8:
+                continue
+            if first in self.recent_slots:
+                self.recent_slots.remove(first)
+            self.recent_slots.append(first)
+            self.recent_slots = self.recent_slots[-256:]
+            index = bisect_right(self._region_bases, first) - 1
+            if index >= 0:
+                owner = self.locator.regions[index]
+                shape = region_shape(owner) if first < owner['base'] + owner['size'] else None
+                if shape is not None:
+                    # Existing members may change LRU order on every refresh.
+                    # Only changed membership needs another persistent hint.
+                    self.region_shapes_dirty |= shape not in self.region_shapes
+                    self.region_shapes = [shape] + [s for s in self.region_shapes if s != shape]
+                    self.region_shapes = self.region_shapes[:16]
+            additions.extend(self._nearby_ranges(first))
+            additions.extend(ranges_for_candidates([row]))
+        updated = recent_ranges(self.ranges, additions)
+        if updated == self.ranges:
+            return False
+        self.ranges = updated
+        if self.scope is None:
+            self.scope = Locator(self._scope_regions())
+        else:
+            # Retain a current scan's frontier; newly lower hints are picked up
+            # on the next bounded local cycle, not by restarting on every row.
+            self.scope.reconcile(self._scope_regions())
+        return True
+
+    def _recent_regions(self, regions):
+        result, seen = [], set()
+        for first in reversed(self.recent_slots):
+            index = bisect_right(self._region_bases, first) - 1
+            if index >= 0:
+                region = regions[index]
+                if first < region['base'] + region['size'] and region['base'] not in seen:
+                    # Revisit around the last valid object, even when its
+                    # allocation is gigabytes and the slot was far from base.
+                    nearby = deepcopy(region)
+                    nearby['base'] = max(region['base'], (first - 1048576) & ~4095)
+                    nearby['size'] = min(region['base'] + region['size'] - nearby['base'], 2 * 1048576)
+                    if 'end' in nearby:
+                        nearby['end'] = nearby['base'] + nearby['size']
+                    result.append(nearby)
+                    seen.add(region['base'])
+            if len(result) >= 32:
+                break
+        return result
+
+    def _recent_owner_regions(self, regions):
+        owners, seen = [], set()
+        for first in reversed(self.recent_slots):
+            index = bisect_right(self._region_bases, first) - 1
+            if index >= 0:
+                region = regions[index]
+                if first < region['base'] + region['size'] and region['base'] not in seen:
+                    owners.append(region)
+                    seen.add(region['base'])
+            if len(owners) >= 32:
+                break
+        return owners
+
+    def _defer_region(self, region):
+        key = region['base'], region.get('allocation_base')
+        task = self._deferred.get(key)
+        cursor = max(region['base'], task['cursor']) if task else region['base']
+        if cursor < region['base'] + region['size']:
+            self._deferred[key] = {'region': region, 'cursor': cursor}
+
+    def _queue_cold_regions(self, regions, now):
+        """Fairly search unmatched small owners alongside a complete sweep.
+
+        Profile matches have an independent resumable revisit lane, so an empty
+        pass in free roam cannot strand them behind this general queue when a
+        later match creates objects. No previous process address is reused.
+        """
+        shapes = set(self.region_shapes)
+        selected = [r for r in regions
+                    if 256 * 1024 <= r['size'] <= 16 * 1048576
+                    and not r.get('executable', False)
+                    and r.get('type', 0x20000) == 0x20000
+                    and region_shape(r) not in shapes]
+        selected.sort(key=lambda r: (-r['size'], r['base']))
+        self.next_cold = now + 5.0
+        for region in selected:
+            self._defer_region(region)
+        self.cold_rounds += 1
+
+    def _fill_priority(self):
+        """Round-robin complete owner extents into a bounded payload queue."""
+        while self._deferred:
+            pending = (self.priority.regions or [])[self.priority.index:]
+            remaining = 8 * 1048576 - sum(region['size'] for region in pending)
+            if remaining <= 0 or len(pending) >= 256:
+                break
+            key = next(iter(self._deferred))
+            task = self._deferred.pop(key)
+            region, cursor = task['region'], task['cursor']
+            end = region['base'] + region['size']
+            size = min(2 * 1048576, remaining, end - cursor)
+            if size <= 0:
+                continue
+            if size <= 32 and cursor + size < end:
+                self._deferred[key] = task
+                break
+            window = dict(region, base=cursor, size=size)
+            if 'end' in window:
+                window['end'] = cursor + size
+            accepted = self.priority.enqueue([window]).get(
+                (cursor, region.get('allocation_base')), 0)
+            if not accepted:
+                self._deferred[key] = task
+                break
+            finish = cursor + accepted
+            if finish < end:
+                # Overlap adjacent windows just like chunks: an inline needle
+                # crossing a window boundary must still be considered.
+                task['cursor'] = finish - 32 if accepted > 32 else cursor
+                self._deferred[key] = task
+                if accepted <= 32:
+                    break
+
+    def step(self, process, stop, *, fresh_rows, now):
+        if self.last_fresh is True and not fresh_rows:
+            self.empty_since = now
+            self.request_recovery(now, 'fresh_rows_lost')
+        elif fresh_rows:
+            self.empty_since = None
+            self._search_pass_pending = False
+            self._empty_passes = 0
+            if self.last_fresh is not True:
+                self.reason = 'fresh_rows_available'
+        self.last_fresh = bool(fresh_rows)
+        # Back off between completed empty passes, never part-way through an
+        # unvisited heap. The reader may have attached in free roam before the
+        # first Eliminator match, with no previous fresh rows to signal a loss.
+        if not fresh_rows and not self._search_pass_pending and now >= self.next_global:
+            self._search_pass_pending = True
+        self.mode = ('tracking' if fresh_rows else
+                     'recovery_burst' if self._search_pass_pending and now < self.burst_until else
+                     'recovery_sweep' if self._search_pass_pending else 'empty_backoff')
+        burst = self.mode in ('recovery_burst', 'recovery_sweep')
+        if now >= self.next_metadata:
+            try:
+                regions = sorted(process.regions(deadline=time.monotonic() +
+                                  (2.0 if self.metadata_at is None else 1.0)),
+                                 key=lambda region: region['base'])
+            except TimeoutError as error:
+                # An incomplete metadata refresh is not a new process or a
+                # rejected row. Retain the last complete metadata and its scan
+                # frontier; every later payload read/row still validates itself.
+                if self.locator.regions is None:
+                    raise
+                self.metadata_refresh_error = str(error)[:512]
+                self.metadata_refresh_failures += 1
+                self._metadata_failure_streak += 1
+                self.next_metadata = time.monotonic() + min(16.0, 2.0 ** min(4, self._metadata_failure_streak))
+            else:
+                changed = self.locator.reconcile(regions)
+                self._region_bases = [r['base'] for r in regions]
+                # Shape hints select only this process's freshly enumerated
+                # eligible metadata. Whole matching owners remain resumable;
+                # a bounded slice never limits a pass to each owner's head.
+                shapes = set(self.region_shapes)
+                preferred_regions = [r for r in regions
+                                     if not r.get('executable', False)
+                                     and region_shape(r) in shapes]
+                preferred_changed = self.preferred.reconcile(preferred_regions)
+                self._preferred_regions = preferred_regions
+                if preferred_changed and self.preferred.complete:
+                    self.preferred.reset(preferred_regions)
+                    self.next_preferred = 0.0
+                self.priority.prune(regions)
+                eligible = {(r['base'], r.get('allocation_base')): r for r in regions}
+                self._deferred = {key: {'region': eligible[key], 'cursor': max(eligible[key]['base'], task['cursor'])}
+                                  for key, task in self._deferred.items()
+                                  if key in eligible and task['cursor'] < eligible[key]['base'] + eligible[key]['size']}
+                # Recent allocations precede metadata deltas after a loss; an
+                # initial full region snapshot never floods the priority queue.
+                if self._revisit_recent:
+                    self.priority.enqueue(self._recent_regions(regions))
+                    for region in self._recent_owner_regions(regions):
+                        self._defer_region(region)
+                    self._revisit_recent = False
+                for region in changed:
+                    self._defer_region(region)
+                if (not fresh_rows and time.monotonic() >= self.next_cold
+                        and not self._deferred
+                        and (self.priority.complete or not self.priority.regions)):
+                    self._queue_cold_regions(regions, time.monotonic())
+                self.metadata_at = time.monotonic()
+                self.metadata_refreshes += 1
+                self.metadata_refresh_error = None
+                self._metadata_failure_streak = 0
+                self.next_metadata = self.metadata_at + (2.0 if burst else 5.0)
+        # Oversized metadata deltas must not vanish just because a bounded
+        # payload queue was full during their one 'changed' generation. Keep
+        # their metadata references and refill as earlier windows complete.
+        self._fill_priority()
+        found = []
+        if self.scope is not None and now >= self.next_scope:
+            rows, _ = self.scope.step(process, stop, seconds=.015, byte_limit=1048576)
+            found.extend(rows)
+            if self.scope.complete:
+                self.scope.reset(self._scope_regions())
+                self.next_scope = time.monotonic() + (0.5 if burst else 2.0)
+        # Preferred and general work alternate inside the existing auxiliary
+        # lane. Both together receive one slice per three global slices during
+        # discovery, so recurring preferred passes cannot starve either the
+        # general cold queue or the complete global frontier.
+        priority_ready = (not self.priority.complete and self.priority.regions
+                          and now >= self.next_priority)
+        preferred_ready = (not self.preferred.complete and self.preferred.regions
+                           and now >= self.next_preferred)
+        auxiliary_ready = priority_ready or preferred_ready
+        global_ready = now >= self.next_global
+        if auxiliary_ready and (not global_ready or
+                (self._global_steps_since_priority >= 3 if burst else self._priority_turn)):
+            use_preferred = preferred_ready and (not priority_ready or self._preferred_turn)
+            auxiliary = self.preferred if use_preferred else self.priority
+            rows, _ = auxiliary.step(process, stop,
+                seconds=.025 if burst else .015, byte_limit=2 * 1048576)
+            found.extend(rows)
+            next_slice = time.monotonic() + (.02 if burst else .2 if not fresh_rows else .5)
+            if use_preferred:
+                self.next_preferred = next_slice
+                if self.preferred.complete:
+                    self.preferred_passes += 1
+                    self.preferred.reset(self._preferred_regions)
+                    self.next_preferred = time.monotonic() + (1.0 if not fresh_rows else 5.0)
+            else:
+                self.next_priority = next_slice
+            self._preferred_turn = not use_preferred
+            self._priority_turn = False
+            self._global_steps_since_priority = 0
+        elif global_ready:
+            rows, _ = self.locator.step(process, stop,
+                seconds=.08 if burst else .02 if not fresh_rows else .01,
+                byte_limit=64 * 1048576 if burst else 8 * 1048576 if not fresh_rows else 2 * 1048576)
+            found.extend(rows)
+            self._priority_turn = True
+            self._global_steps_since_priority += 1
+            self.next_global = time.monotonic() + (.02 if burst else .2 if not fresh_rows else 1.0)
+            if self.locator.complete:
+                # A completed sweep may start another pass; metadata changes
+                # and row loss never discard an in-progress global frontier.
+                self.full_scan_generation += 1
+                self._search_pass_pending = False
+                self.locator.reset(self.locator.regions)
+                if not fresh_rows:
+                    self._empty_passes += 1
+                self.next_global = time.monotonic() + (min(5.0, 2.0 ** min(3, self._empty_passes - 1))
+                                                       if not fresh_rows else 5.0)
+        return found
+
+    def status(self, now):
+        return {'mode': self.mode, 'reason': self.reason,
+                'priority_range_count': max(0, len(self.priority.regions or []) - self.priority.index),
+                'priority_bytes': sum(r['size'] for r in (self.priority.regions or [])[self.priority.index:]),
+                'deferred_region_count': len(self._deferred),
+                'scope_range_count': len(self.ranges),
+                'scope_bytes': sum(high - low for low, high in self.ranges),
+                'cold_rounds': self.cold_rounds,
+                'region_shape_count': len(self.region_shapes),
+                'preferred_region_count': len(self._preferred_regions),
+                'preferred_passes': self.preferred_passes,
+                'preferred_scan_progress': self.preferred.progress(),
+                'metadata_refreshes': self.metadata_refreshes,
+                'metadata_refresh_error': self.metadata_refresh_error,
+                'metadata_refresh_failures': self.metadata_refresh_failures,
+                'metadata_age_seconds': now - self.metadata_at if self.metadata_at is not None else None,
+                'full_scan_generation': self.full_scan_generation,
+                'empty_seconds': now - self.empty_since if self.empty_since is not None else 0.0,
+                'burst_remaining_seconds': max(0.0, self.burst_until - now) if self.mode == 'recovery_burst' else 0.0}
+
+    def poll_period(self, normal):
+        return normal if self.mode == 'tracking' else .02 if self.mode in ('recovery_burst', 'recovery_sweep') else .2
 
 
 class CandidatePool:
@@ -235,6 +755,8 @@ class Runtime:
         self._closed = False
         self._car_lock = threading.RLock()
         self._car_session = self._previous_car_ordinal = self._last_car_rescan = None
+        self._scope_load_status = []
+        self._next_scan_status = 0.0
 
     def _start_map_service(self):
         # The factory and native sampler are not touched by construction,
@@ -281,7 +803,8 @@ class Runtime:
                 if not isinstance(sample, dict):
                     raise ValueError('Map service snapshot must be a dict')
                 map_status.update({key: sample[key] for key in
-                                   ('map_state', 'reason', 'map_frame', 'tracker_status', 'map_timing') if key in sample})
+                                    ('map_state', 'reason', 'map_frame', 'tracker_status', 'map_timing',
+                                     'error', 'alignment_profile_status') if key in sample})
             except Exception as error:
                 map_status.update(reason='map_service_snapshot_failed', error=str(error), map_frame=None)
         elif self._map_start_error:
@@ -390,10 +913,12 @@ class Runtime:
             self.store.set_status(state='已停止', memory_state='已停止', telemetry_state='已停止')
 
     def _load_scope(self, identity, version):
+        self._scope_load_status = []
         for file in (self.state_dir / 'pool_scope.json', self.seed_scope):
             try:
                 cache = json.loads(file.read_text(encoding='utf-8-sig'))
                 if cache['session_key'] != identity['session_key'] or cache['package_version'] != version:
+                    self._scope_load_status.append({'file': file.name, 'result': 'session_or_version_changed'})
                     continue
                 ranges = cache['ranges']
                 if not isinstance(ranges, list) or not 1 <= len(ranges) <= 256:
@@ -405,10 +930,72 @@ class Runtime:
                     continue
                 if sum(high - low for low, high in ranges) > 8 * 1048576:
                     continue
+                self._scope_load_status.append({'file': file.name, 'result': 'same_session_hint',
+                                               'bytes': sum(high - low for low, high in ranges)})
                 return merge_ranges(ranges)
             except (OSError, ValueError, KeyError, TypeError):
+                self._scope_load_status.append({'file': file.name, 'result': 'missing_or_invalid'})
                 continue
         return []
+
+    def _load_region_shapes(self, version):
+        shapes = []
+        for file in (self.state_dir / 'pool_region_shapes.json',
+                     RESOURCE_DIR / 'data' / 'fh5_scan_profile.json'):
+            try:
+                document = json.loads(file.read_text(encoding='utf-8'))
+                if not isinstance(document, dict):
+                    continue
+                if document.get('package_version') != version:
+                    continue
+                for item in document.get('region_shapes', [])[:16]:
+                    shape = region_shape(item) if isinstance(item, dict) else None
+                    if shape is not None and shape not in shapes:
+                        shapes.append(shape)
+            except (OSError, ValueError, TypeError, KeyError):
+                continue
+        return shapes[:16]
+
+    def _save_region_shapes(self, version, shapes):
+        file = self.state_dir / 'pool_region_shapes.json'
+        document = {'schema_version': 1, 'package_version': version,
+                    'region_shapes': [dict(zip(('size', 'type', 'protect'), shape)) for shape in shapes[:16]],
+                    'note': 'Address-free search ordering only. Enumerate current regions and revalidate every row.'}
+        try:
+            temporary = file.with_suffix('.json.tmp')
+            temporary.write_text(json.dumps(document, indent=2) + '\n', encoding='utf-8')
+            temporary.replace(file)
+            return True
+        except OSError:
+            return False
+
+    def _write_scan_status(self, *, force=False):
+        """One overwritten local status file, also for ordinary shortcut launches."""
+        now = time.monotonic()
+        if not force and now < self._next_scan_status:
+            return
+        self._next_scan_status = now + 1.0
+        snapshot = self.snapshot()
+        document = {key: snapshot.get(key) for key in
+                    ('session_key', 'game_version', 'process_pid', 'state', 'memory_state',
+                      'last_error', 'scan_progress', 'memory_timing', 'map_state', 'map_reason',
+                      'map_timing')}
+        # Ordinary desktop launches need camera diagnostics too. Keep one small
+        # overwritten file, without frame matrices or the candidate payloads.
+        map_status = snapshot.get('map_status') or {}
+        document.update(map_tracker=map_status.get('tracker_status'),
+                        map_error=map_status.get('error'),
+                        map_diagnostic_revision='first-map-v10')
+        document.update(schema_version=1, revision='cold-start-v5',
+                        scope_cache=self._scope_load_status,
+                        fresh_row_count=len(snapshot.get('rows') or []))
+        file = self.state_dir / 'scan_status.json'
+        try:
+            temporary = file.with_suffix('.json.tmp')
+            temporary.write_text(json.dumps(document, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+            temporary.replace(file)
+        except OSError:
+            pass
 
     def _save_scope(self, identity, version, ranges):
         if sum(high - low for low, high in ranges) > 8 * 1048576:
@@ -466,10 +1053,9 @@ class Runtime:
 
     def _memory_loop(self):
         process = None
-        locator = Locator()
-        scope_locator = None
+        planner = None
         pool = None
-        ranges, next_search, next_scope, next_background, next_version_check = [], 0.0, 0.0, 0.0, 0.0
+        next_version_check = 0.0
         version, attached_at, first_rows_at = None, None, None
         discovery_started_at, discovery_first_rows_at = None, None
         try:
@@ -486,20 +1072,19 @@ class Runtime:
                         if len(matches) != 1:
                             if len(matches) > 1:
                                 self.store.set_status(state='存在多个 FH5 进程，暂停读取')
+                            self._write_scan_status()
                             self.stop.wait(1)
                             continue
                         process = self._process_factory(matches[0]['pid'])
                         version = package_version(process.identity['image_path'])
                         self.store.set_session(process.identity, game_version=version)
                         self.store.set_status(last_error=None)
-                        ranges = self._load_scope(process.identity, version)
-                        scope_locator = Locator([{'base': low, 'size': high - low} for low, high in ranges]) if ranges else None
                         pool = CandidatePool(process.identity['session_key'], version)
-                        locator.reset()
                         attached_at, first_rows_at = time.monotonic(), None
+                        planner = DiscoveryPlanner(self._load_scope(process.identity, version), attached_at,
+                                                   self._load_region_shapes(version))
                         discovery_started_at, discovery_first_rows_at = attached_at, None
-                        next_search, next_scope = 0.0, 0.0
-                        next_background, next_version_check = started + 60, started + 10
+                        next_version_check = started + 10
                     if started >= next_version_check:
                         current = package_version(process.identity['image_path'])
                         if current != version:
@@ -512,61 +1097,54 @@ class Runtime:
                         self.store.clear_rows('unsupported_build')
                         self.store.set_status(state=f'当前版本 {version or "未知"} 未验证，暂停坐标读取',
                                               memory_state='版本未匹配')
+                        self._write_scan_status()
                         self.stop.wait(1)
                         continue
                     if self._rescan.is_set():
                         self._rescan.clear()
-                        locator.reset()
-                        scope_locator = Locator([{'base': low, 'size': high - low} for low, high in ranges]) if ranges else None
-                        next_search = next_scope = 0
+                        planner.request_recovery(time.monotonic(), 'requested_rescan')
                         discovery_started_at, discovery_first_rows_at = time.monotonic(), None
                     refreshes = []
+                    scope_changed = False
                     if pool.addresses:
-                        refreshes.append(pool.refresh(process, self.stop, self.catalog))
-                    discovered = []
-                    # A cached scope is session-bound and only a discovery hint.
-                    # Its cursor survives deadlines, unlike the old full rescan.
-                    if scope_locator is not None and started >= next_scope:
-                        found, progress = scope_locator.step(process, self.stop, seconds=.025,
-                                                             byte_limit=2 * 1048576)
-                        discovered.extend(found)
-                        self.store.set_status(scope_scan_progress=progress)
-                        if scope_locator.complete:
-                            scope_locator.reset([{'base': low, 'size': high - low} for low, high in ranges])
-                            next_scope = time.monotonic() + 2.0
-                    # Empty-pool discovery runs short resumable steps without a
-                    # fixed half-second wait after every 32 MiB. Background
-                    # expansion is deliberately slower once live slots exist.
-                    searching = not pool.addresses and not discovered and started >= next_search
-                    if searching or started >= next_background:
-                        found, progress = locator.step(process, self.stop,
-                            seconds=.12 if searching else .015,
-                            byte_limit=128 * 1048576 if searching else 2 * 1048576)
-                        discovered.extend(found)
-                        self.store.set_status(scan_progress=progress)
-                        if locator.complete:
-                            locator.reset()
-                            next_search = time.monotonic() + 1.0
-                            next_background = time.monotonic() + 60.0
-                        elif not searching:
-                            next_background = time.monotonic() + 1.0
+                        fresh_before = bool(self.store.source_snapshot()['fresh_row_count'])
+                        refresh_seconds = (.18 if fresh_before else
+                            .08 if time.monotonic() < planner.burst_until else .02)
+                        refresh = pool.refresh(process, self.stop, self.catalog, seconds=refresh_seconds)
+                        refreshes.append(refresh)
+                        if not process.is_alive():
+                            self.store.set_session(None)
+                            continue
+                        # Apply removals before selecting search speed. A slot
+                        # retained after a deadline is not a fresh source row.
+                        self.store.publish_row_updates(process.identity['session_key'], refresh['rows'],
+                            removed=refresh['removed'], now=refresh['sample_monotonic'])
+                        scope_changed |= planner.observe_rows(refresh['rows'])
+                    source = self.store.source_snapshot()
+                    discovered = planner.step(process, self.stop,
+                        fresh_rows=bool(source['fresh_row_count']), now=time.monotonic())
                     if discovered:
                         pool.register(discovered)
-                        combined = merge_ranges(ranges + ranges_for_candidates(discovered))
-                        if combined != ranges:
-                            ranges = combined
-                            self._save_scope(process.identity, version, ranges)
-                            scope_locator = Locator([{'base': low, 'size': high - low} for low, high in ranges])
-                            next_scope = time.monotonic() + 2.0
                         # Newly found slots can appear in this iteration; there
                         # is no additional polling-period delay before publish.
-                        refreshes.append(pool.refresh(process, self.stop, self.catalog))
+                        refresh_seconds = (.18 if source['fresh_row_count'] else
+                            .08 if time.monotonic() < planner.burst_until else .02)
+                        refresh = pool.refresh(process, self.stop, self.catalog, seconds=refresh_seconds)
+                        refreshes.append(refresh)
+                        if not process.is_alive():
+                            self.store.set_session(None)
+                            continue
+                        self.store.publish_row_updates(process.identity['session_key'], refresh['rows'],
+                            removed=refresh['removed'], now=refresh['sample_monotonic'])
+                        scope_changed |= planner.observe_rows(refresh['rows'])
+                    if scope_changed:
+                        self._save_scope(process.identity, version, planner.ranges)
+                    if (planner.region_shapes_dirty
+                            and self._save_region_shapes(version, planner.region_shapes)):
+                        planner.region_shapes_dirty = False
                     if not process.is_alive():
                         self.store.set_session(None)
                         continue
-                    for refresh in refreshes:
-                        self.store.publish_row_updates(process.identity['session_key'], refresh['rows'],
-                            removed=refresh['removed'], now=refresh['sample_monotonic'])
                     rows = self.store.snapshot()['rows']
                     if rows and first_rows_at is None:
                         first_rows_at = time.monotonic()
@@ -577,8 +1155,10 @@ class Runtime:
                     limited = any(refresh['limited'] for refresh in refreshes)
                     message = f'已读取 {len(rows)} 个候选（观察池）' if rows else '等待车包 / 正在定位'
                     self.store.set_status(state=message,
-                        memory_state=message if rows else ('观察池无有效候选' if ranges else '正在定位车包池'),
+                        memory_state=message if rows else ('观察池无有效候选' if planner.ranges else '正在定位车包池'),
                         scope='observed_pool' if rows else 'partial_discovery',
+                        scan_progress=planner.locator.progress(),
+                        scope_scan_progress=planner.scope.progress() if planner.scope else None,
                         read_gaps=sum(refresh['read_gaps'] for refresh in refreshes),
                         refresh_limited=limited,
                         memory_timing={'session_started_monotonic': attached_at,
@@ -589,8 +1169,10 @@ class Runtime:
                             'discovery_elapsed_seconds': discovery_first_rows_at - discovery_started_at if discovery_first_rows_at is not None else None,
                             'iteration_elapsed_seconds': time.monotonic() - started,
                             'known_slots': len(pool.addresses),
+                            'recovery': planner.status(time.monotonic()),
                             'refreshes': [{key: value for key, value in refresh.items()
                                            if key not in ('rows', 'removed')} for refresh in refreshes]})
+                    self._write_scan_status()
                 except (OSError, ValueError, RuntimeError, TimeoutError) as error:
                     self.store.clear_rows('read_error')
                     if process is not None:
@@ -599,8 +1181,9 @@ class Runtime:
                     self.store.set_session(None)
                     self.store.set_status(state=f'读取暂停：{error}', memory_state=f'读取错误：{error}',
                                           last_error=str(error))
+                    self._write_scan_status(force=True)
                     self.stop.wait(.5)
-                target_period = self.period if pool is not None and pool.addresses else .02
+                target_period = planner.poll_period(self.period) if planner is not None else .2
                 delay = max(.005, target_period - (time.monotonic() - started))
                 self.wake.wait(delay)
                 self.wake.clear()
@@ -608,6 +1191,8 @@ class Runtime:
             if process is not None:
                 process.close()
             self.store.set_session(None)
+            self.store.set_status(state='已停止', memory_state='已停止')
+            self._write_scan_status(force=True)
 
     def _telemetry_loop(self):
         peer_key, last_timestamp, session = None, None, None

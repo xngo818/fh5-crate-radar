@@ -21,12 +21,18 @@ RENDER_KEYS = ('kind', 'visible', 'visible_item_count', 'span', 'radius', 'centr
 MARKER_KEYS = ('F', 'fingerprint', 'level', 'grade', 'name', 'car_id', 'label',
                'identity_status', 'replay', 'verified')
 PROGRESS_KEYS = ('attempted_mib', 'region_index', 'region_count', 'eligible_mib',
-                 'failed_chunks', 'complete_selected_policy', 'complete_world_coverage')
+                 'failed_chunks', 'complete_selected_policy', 'complete_world_coverage',
+                 'scan_address', 'pending_hit_offset', 'pending_stride_index')
 ERROR_KEYS = ('operation', 'winerror', 'detail', 'address', 'requested', 'actual')
 MEMORY_TIMING_KEYS = ('session_started_monotonic', 'first_rows_monotonic',
                      'first_rows_elapsed_seconds', 'discovery_started_monotonic',
                      'discovery_first_rows_monotonic', 'discovery_elapsed_seconds',
                      'iteration_elapsed_seconds', 'known_slots')
+RECOVERY_TIMING_KEYS = ('mode', 'reason', 'priority_range_count', 'priority_bytes',
+                        'deferred_region_count', 'scope_range_count',
+                        'scope_bytes', 'metadata_refreshes', 'metadata_age_seconds',
+                        'metadata_refresh_error', 'metadata_refresh_failures',
+                        'full_scan_generation', 'empty_seconds', 'burst_remaining_seconds')
 REFRESH_TIMING_KEYS = ('limited', 'sample_monotonic', 'elapsed_seconds',
                       'known_slots', 'visited_slots', 'read_calls', 'read_bytes', 'read_gaps')
 MAP_TIMING_KEYS = ('basis', 'session_started_monotonic', 'sample_monotonic',
@@ -191,6 +197,8 @@ def display_record(snapshot, render=None, *, map_render=None, utc=None, monotoni
         timing = snapshot['memory_timing']
         record['memory_timing'] = _fields(timing, MEMORY_TIMING_KEYS)
         record['memory_timing']['refreshes'] = _items(timing.get('refreshes'), REFRESH_TIMING_KEYS)[:8]
+        if type(timing.get('recovery')) is dict:
+            record['memory_timing']['recovery'] = _fields(timing['recovery'], RECOVERY_TIMING_KEYS)
     if isinstance(snapshot.get('map_timing'), dict):
         record['map_timing'] = _fields(snapshot['map_timing'], MAP_TIMING_KEYS)
     record['utc'] = (utc[:MAX_TEXT] if isinstance(utc, str) and utc else

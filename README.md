@@ -1,0 +1,109 @@
+# FH5 Crate Radar
+
+Source edition checks (2026-10-27): **424 tests passed**, plus radar and map offline replays.
+
+## Source and downloads
+
+- **source**: browsable Python source, tests, and synthetic demo data (default branch).
+- **release**: version notes and Windows download instructions.
+- [Download Windows packages](https://github.com/xngo818/fh5-crate-radar/releases/tag/1.1.1)
+- [Release branch](https://github.com/xngo818/fh5-crate-radar/tree/release)
+
+This source edition includes the first-map-v10 code updates from 2026-10-26,
+including camera discovery, scan-cache persistence, level sorting, and opening statistics.
+The downloadable Windows build contains additional bundled graphics. This source
+edition uses a grid background and fallback tier markers, so its graphics differ.
+
+
+Windows 桌面的实验性 FH5 车包雷达与地图覆盖工具。使用 Python 标准库、Tk 界面、本机 Data Out 遥测和只读进程数据，显示当前读取范围内的候选车包。公开版由现有项目整理而来，保留了代码来源说明，并提供人工合成数据供离线演示。
+
+## 支持范围
+
+| 项目 | 当前范围 |
+| --- | --- |
+| 系统 | Windows，Python 3.12 x64，需带 Tcl/Tk |
+| 游戏接入 | Xbox PC 版 FH5 `3.688.109.0` |
+| 实测显示环境 | `2560 × 1440`，DPI `120`（125%） |
+| 遥测 | Data Out，`127.0.0.1:53005`，UDP |
+| 运行依赖 | Python 标准库，无需安装 Pillow |
+| 打包工具 | PyInstaller `6.22.3` |
+
+其他游戏版本、Steam 版、分辨率或缩放组合未完成适配验证。地图覆盖需要游戏版本、当前状态和窗口/地图校验通过；校验不通过时保持关闭（fail closed）。自由漫游等没有有效车包状态的场景也可能不显示地图覆盖。详细限制见 [SUPPORTED_BUILD.md](docs/SUPPORTED_BUILD.md)。
+
+候选数量只表示本次读取范围，不能据此判断全地图车包总数。没有固定扫描耗时或识别完整率保证。公开版车型名称表只保留车包映射涉及的 45 个名称；其他本车名称可能为空，车包识别不受这一裁剪影响。
+
+## 长会话扫描
+
+这一修订针对长会话中对象失效后的扫描路径：优先回查近期区域并刷新内存区域信息；没有有效候选时，按有界时间片持续完成整轮搜索，只在完整空轮之间短暂退避。密集特征块支持在块内继续验证，避免短时间片反复从头重试；已有完整区域快照时，后续枚举超时会保留扫描进度。缓存扫描范围（scope）限制为总计 8 MiB、最多 256 段，地图提示区域（hint）最多保留 16 处。发现阶段的缓存只用于定位地址，显示前仍独立完成身份与坐标校验，TTL 规则保持不变。真实长时间连续对局尚未复验，不承诺固定发现秒数。
+
+较大的新区域或近期车包所属区域会按窗口分段回查，队列满时保留尚未安排的剩余范围；多个区域轮流安排窗口。区域枚举连续超时会逐步延长重试间隔，已有完整快照仍可用于继续搜索。
+
+## 从源码启动
+
+1. 安装 Python 3.12 x64，保留安装器的 Tcl/Tk 组件，并确保可以运行 `python`。可用 `python -m tkinter` 检查 Tk 窗口。
+2. 将仓库完整下载或解压到一个目录，在该目录双击 `Start_FH5.cmd`；也可在终端运行：
+
+   ```powershell
+   python fh5_app.py
+   ```
+
+3. 接入支持的游戏版本时，在游戏的 Data Out 设置中启用输出，目标 IP 设为 `127.0.0.1`，目标端口设为 `53005`。以工具界面的遥测、读取和校验状态为准。
+
+`requirements.txt` 记录了运行时没有第三方 pip 依赖。首次查看效果时，可先使用下面的离线演示。
+
+## 无游戏离线演示
+
+`examples/demo.json` 是人工构造的演示数据，所有坐标、地址及会话标记都是虚构值。回放模式不连接游戏进程，也不启动 UDP 监听。
+
+双击 `Start_Demo.cmd` 查看雷达和控制面板，或运行：
+
+```powershell
+python fh5_app.py --replay examples/demo.json
+```
+
+双击 `Start_Map_Demo.cmd` 查看地图投影演示，或运行：
+
+```powershell
+python fh5_app.py --map-preview --replay examples/demo.json
+```
+
+地图演示使用空白背景及自绘圆点、数字；仓库不附带游戏地图底图和游戏等级图标。
+
+无窗口自检：
+
+```powershell
+python fh5_app.py --replay examples/demo.json --headless --seconds 1
+python fh5_app.py --map-preview --replay examples/demo.json --headless --seconds 1
+```
+
+这些命令检查离线数据与渲染流程，不证明当前游戏版本的实时接入成功。
+
+## 操作
+
+| 操作 | 默认按键/设置 |
+| --- | --- |
+| 切换雷达显示 | 手柄 `X` 或键盘 `F9` |
+| 切换地图覆盖 | 手柄 `Y`，也可用面板按钮 |
+| 退出 | 键盘 `End` 或面板“退出” |
+| 最低车包等级 | 默认 `4`，面板可调 `4–10` |
+| 雷达直径、透明度 | 在控制面板调整 |
+
+手柄切换键可在面板中更改。雷达以车头朝上，并随车辆朝向旋转；地图覆盖是否显示仍受校验状态限制。
+
+## 测试与 Windows 打包
+
+在仓库根目录运行标准库测试：
+
+```powershell
+python -m unittest discover -s tests -v
+```
+
+构建前安装打包依赖，再运行构建脚本：
+
+```powershell
+python -m pip install -r requirements-dev.txt
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Build_Windows.ps1
+```
+
+构建输出为 `dist/FH5CrateRadar.exe`。请使用 Python 3.12 x64 在 Windows 上构建。离线测试、EXE 构建成功和真实游戏接入是不同的验证结果；发布时应分别说明。
+

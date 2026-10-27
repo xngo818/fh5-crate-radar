@@ -1,0 +1,13 @@
+{
+  "date": "2026-10-27",
+  "revision": "first-map-v10-source",
+  "source_unit_tests": 424,
+  "result": "passed",
+  "checks": [
+    "synthetic radar replay: 8 rows",
+    "synthetic map preview: 8 markers"
+  ],
+  "game_connected": false,
+  "windows_binary_rebuilt": false,
+  "source_edition_graphics": "grid background and fallback tier markers"
+}
