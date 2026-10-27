@@ -1,3 +1,0 @@
--r requirements.txt
-PyInstaller==6.22.3
-# Tests use the standard-library unittest module.
