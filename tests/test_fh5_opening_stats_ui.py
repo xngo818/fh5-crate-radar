@@ -113,6 +113,17 @@ class StatisticsUiTests(unittest.TestCase):
         self.assertEqual([row['level'] for row in recorded['rows']], [4, 7])
         self.assertEqual(recorded['display_min_level'], 10)
 
+    def test_low_tier_counts_are_not_added_to_the_statistics_status_text(self):
+        app, _ = self.app()
+        text = app._opening_stats_text({
+            'count': 51, 'target': 200, 'last_sample': {'counts': {
+                '2': 50, '3': 13, '4': 4, '5': 0, '6': 0,
+                '7': 2, '8': 1, '9': 1, '10': 1, 'purple': 4}}})
+        self.assertIn('51/200', text)
+        self.assertIn('7/8/9/10级：2/1/1/1', text)
+        self.assertNotIn('2/3/4/5/6', text)
+        self.assertNotIn('50/13/4', text)
+
 
 if __name__ == '__main__':
     unittest.main()

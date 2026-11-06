@@ -1,23 +1,37 @@
-# FH5 Crate Radar
+# FH5 车包雷达 2.0
 
-Source edition checks (2026-10-27): **424 tests passed**, plus radar and map offline replays.
+适用于《极限竞速：地平线 5》淘汰之王。雷达显示附近已识别的车包和等级，地图可叠加它们的位置。2.0 在雷达之外增加了两项独立设置：**提前选好逐级升级的候选车**，以及**指定当前 10 级车在同级换车时的目标**。
 
-## Source and downloads
+**[下载 Windows 64 位版](https://github.com/xngo818/fh5-crate-radar/releases/download/2.0/FH5-Crate-Radar-2.0-Windows-x64.zip)** · [2.0 发布说明](https://github.com/xngo818/fh5-crate-radar/releases/tag/2.0) · [查看旧版本](https://github.com/xngo818/fh5-crate-radar/releases)
 
-- **source**: browsable Python source, tests, and synthetic demo data (default branch).
-- **release**: version notes and Windows download instructions.
-- [Download Windows packages](https://github.com/xngo818/fh5-crate-radar/releases/tag/1.1.1)
-- [Release branch](https://github.com/xngo818/fh5-crate-radar/tree/release)
+## 开始使用
 
-This source edition includes the first-map-v10 code updates from 2026-10-26,
-including camera discovery, scan-cache persistence, level sorting, and opening statistics.
-The downloadable Windows build contains additional bundled graphics. This source
-edition uses a grid background and fallback tier markers, so its graphics differ.
+1. 下载并完整解压 ZIP，双击 `FH5CrateCoordinatesUpgradeV5.exe`。2.0 使用内部 V5 构建，文件名保留 V5；Windows 版不需要另装 Python。
+2. 游戏中开启 **Data Out**，目标 IP 设为 `127.0.0.1`，UDP 端口设为 `53005`。当前适配 **Xbox / Microsoft Store PC 版 `3.688.109.0`**；本包未验证 Steam 版或其他版本。
+3. 从旧版升级时，先退出旧程序，把原程序旁的 `state` 文件夹复制到新程序旁，即可保留设置与统计。不要同时运行两版。
 
+只用雷达和地图时，不用打开选车开关。雷达默认按手柄 `X` 或键盘 `F9` 切换，地图默认按手柄 `Y` 切换。
 
-Windows 桌面的实验性 FH5 车包雷达与地图覆盖工具。使用 Python 标准库、Tk 界面、本机 Data Out 遥测和只读进程数据，显示当前读取范围内的候选车包。公开版由现有项目整理而来，保留了代码来源说明，并提供人工合成数据供离线演示。
+## 两种选车怎么用
 
-## 支持范围
+| 想做什么 | 在哪里设置 | 游戏里怎么选 |
+| --- | --- | --- |
+| 指定普通升级的候选车 | 在「升级选车」页为升到 2–10 级分别选车，勾选「启用升级选车」。没指定的等级保留「保持随机」。 | 等页面显示「已接入」并读出当前车和下一辆车。单挑获胜后选「升级车辆」。这里的“升到 10 级”指 **9→10**。 |
+| 给当前 10 级车指定换车目标 | 在「10级换车」页，给当前车型选另一辆 10 级车，并勾选「启用10级换车规则（实验）」。每辆车的规则单独保存。 | 获胜后先核对菜单车型，显示目标再确认换车。**实测首次获胜仍显示原候选；保留当前车后，第二次获胜菜单才显示指定车型。** |
+
+选车开关启动时默认关闭，已保存的车型设置会保留。开启后，工具会改写游戏中的待选车型记录。「10级目标已准备」表示记录已写入并读回；已经打开的换车菜单可能仍显示旧值。选择「拿对手车」不属于这两项设置。
+
+## 换局后一直在定位？
+
+2.0 会优先在上一局读到记录的附近重新搜索；旧区域失效后会继续往后找。若下一局的记录出现在更远的位置，仍需等待全局搜索，不能保证固定秒数。可在程序旁的 `state/upgrade_events.jsonl` 查看搜索进度。
+
+## 版本与源码
+
+- [当前版本的 Python 源码](https://github.com/xngo818/fh5-crate-radar/tree/2.0)包含 V5 的升级、10 级换车及换局定位逻辑。公开源码使用网格和数字标记，Windows 下载包保留了已有的地图和图标。
+- 公开源码测试：469 项通过，1 项因需要未公开的原始游戏记录而跳过。Windows 发布包另行检查了程序代码一致性，并通过雷达、地图的合成数据回放。这些检查不等于新一轮联网实测。
+- [更新记录](CHANGELOG.md) · [技术适配范围](docs/SUPPORTED_BUILD.md) · [许可及来源说明](THIRD_PARTY_NOTICES.md)
+
+## 雷达、地图与公开源码的支持范围
 
 | 项目 | 当前范围 |
 | --- | --- |
@@ -106,4 +120,3 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Build_Windows.ps1
 ```
 
 构建输出为 `dist/FH5CrateRadar.exe`。请使用 Python 3.12 x64 在 Windows 上构建。离线测试、EXE 构建成功和真实游戏接入是不同的验证结果；发布时应分别说明。
-

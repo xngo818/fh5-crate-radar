@@ -7,6 +7,14 @@ was developed separately using read-only process observations and Data Out.
 `pool.py` retains its bytecode reconstruction provenance. Original author
 comments, formatting and unpublished build files were not recovered.
 
+The 2.0 radar and map views still use read-only observations. The two optional
+vehicle selection controls are different: when enabled, they write a validated
+four-byte pending vehicle row key. Both switches are off at startup.
+Normal upgrades (including 9 to 10) and same-level swaps at level 10 have
+separate preferences. A first-win menu at level 10 can keep its original choice;
+the requested vehicle was observed in the second menu after retaining the car.
+Windows 2.0 targets the Xbox / Microsoft Store PC build only.
+
 ## Identity mapping
 
 `data/fh5_loot_mapping.json` retains the 45 factual ID/name/tier associations

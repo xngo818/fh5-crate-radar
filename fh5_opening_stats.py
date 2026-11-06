@@ -22,7 +22,7 @@ import uuid
 from fh5_models import CORE_SUCCESS, ROW_TTL
 
 SCHEMA_VERSION = 2
-MAX_MATCHES = 50
+MAX_MATCHES = 200
 MAX_ATTEMPTS = 500
 MAX_ROWS = 1024
 MAX_FILE_BYTES = 512 * 1024
@@ -30,6 +30,8 @@ STABLE_SECONDS = 3.0
 ARM_TIMEOUT = 120.0
 EXPECTED_POOL_SIZE = 72
 LEVELS = (7, 8, 9, 10)
+ADDITIONAL_LEVELS = (2, 3, 4, 5, 6)
+RECORDED_LEVELS = ADDITIONAL_LEVELS + LEVELS
 METRIC = 'mean_count_per_valid_first_wave_72_observation'
 PHASE_SOURCE = 'user_marked_new_match_button'
 LEGACY_PHASE_SOURCE = 'user_marked_controller_A_or_panel'
@@ -135,7 +137,7 @@ def classify_frame(snapshot):
         return dict(result, reason='waiting_for_exactly_72_unique_objects', **details)
     if details['unknown_count']:
         return dict(result, reason='waiting_for_all_72_verified_levels', **details)
-    counts = {str(level): levels.count(level) for level in LEVELS}
+    counts = {str(level): levels.count(level) for level in RECORDED_LEVELS}
     counts['purple'] = sum(counts[str(level)] for level in (7, 8, 9))
     return {'eligible': True, 'reason': 'healthy_live_observation',
             'session_key': session, 'game_version': snapshot['game_version'],
@@ -164,6 +166,20 @@ def _coverage_progress(snapshot):
     return result
 
 
+def _valid_additional_counts(counts):
+    """Legacy rows omit levels 2--6; an extended row must contain all five.
+
+    Absence is historical missing data, never an observed zero. New captures
+    always include the complete 2--10 block, even for tiers with zero objects.
+    """
+    present = [str(level) for level in ADDITIONAL_LEVELS if str(level) in counts]
+    return (not present or
+            (len(present) == len(ADDITIONAL_LEVELS)
+             and all(type(counts[key]) is int and 0 <= counts[key] <= EXPECTED_POOL_SIZE
+                     for key in present)
+             and sum(counts[str(level)] for level in RECORDED_LEVELS) <= EXPECTED_POOL_SIZE))
+
+
 def _valid_record(record):
     return (type(record) is dict and record.get('schema_version') == SCHEMA_VERSION
             and record.get('scope') == SCOPE and record.get('user_marked') is True
@@ -175,6 +191,7 @@ def _valid_record(record):
             and type(record.get('counts')) is dict
             and all(type(record['counts'].get(str(level))) is int
                     and 0 <= record['counts'][str(level)] <= EXPECTED_POOL_SIZE for level in LEVELS)
+            and _valid_additional_counts(record['counts'])
             and record['counts'].get('purple') == sum(record['counts'][str(level)] for level in (7, 8, 9))
             and type(record.get('observed_count')) is int and record['observed_count'] == EXPECTED_POOL_SIZE
             and type(record.get('unknown_count')) is int and record['unknown_count'] == 0
@@ -182,7 +199,7 @@ def _valid_record(record):
 
 
 class OpeningStatistics:
-    """At most 50 persisted, explicitly armed opening observations.
+    """At most 200 persisted, explicitly armed opening observations.
 
     Construction reads existing records but never creates paths. reset() cancels
     only the in-progress mark; it never deletes completed observations.
@@ -190,7 +207,7 @@ class OpeningStatistics:
 
     def __init__(self, directory, target=MAX_MATCHES, *, clock=time.monotonic, utc_clock=_utc_now):
         if type(target) is not int or not 1 <= target <= MAX_MATCHES:
-            raise ValueError('target must be an integer in 1..50')
+            raise ValueError('target must be an integer in 1..200')
         self.directory = Path(directory)
         self.target = target
         self._clock, self._utc_clock = clock, utc_clock
@@ -235,7 +252,7 @@ class OpeningStatistics:
                 ids.add(item['match_id'])
                 hashes.add(item['snapshot_hash'])
                 if len(records) > MAX_MATCHES:
-                    raise ValueError('statistics file exceeds 50 records')
+                    raise ValueError('statistics file exceeds 200 records')
         return records
 
     def _load_attempts(self):
@@ -520,27 +537,37 @@ class OpeningStatistics:
 
     def _write_summaries(self):
         records = self._records
-        keys = [str(level) for level in LEVELS] + ['purple']
-        totals = {key: sum(row['counts'][key] for row in records) for key in keys}
-        expected = {key: totals[key] / len(records) if records else None for key in keys}
+        keys = [str(level) for level in RECORDED_LEVELS] + ['purple']
+        values = {key: [row['counts'][key] for row in records if key in row['counts']]
+                  for key in keys}
+        level_sample_counts = {key: len(values[key]) for key in keys}
+        # Earlier observations have no low-tier counts. Use each tier's actual
+        # recorded denominator so the first 50 rows do not become false zeros.
+        totals = {key: (sum(values[key]) if values[key] or key not in
+                       {str(level) for level in ADDITIONAL_LEVELS} else None)
+                  for key in keys}
+        expected = {key: totals[key] / len(values[key]) if values[key] else None
+                    for key in keys}
         summary = {'schema_version': SCHEMA_VERSION, 'scope': SCOPE, 'metric': METRIC,
             'sample_count': len(records), **self._attempt_summary(), 'target': self.target,
             'target_reached': len(records) >= self.target, 'expected_pool_size': EXPECTED_POOL_SIZE,
             'phase_source': PHASE_SOURCE, 'limitation': LIMITATION,
             'coverage': 'observed_only', 'totals': totals, 'means': expected,
             'expectations': expected, 'expected_counts': expected,
+            'level_sample_counts': level_sample_counts,
             'samples': records, 'attempts': self._attempts}
         self._atomic_write(SUMMARY_JSON, json.dumps(summary, ensure_ascii=False, indent=2) + '\n')
         output = io.StringIO(newline='')
         writer = csv.writer(output)
-        writer.writerow(['sample', 'match_id', 'marked_utc', 'captured_utc', 'level_7', 'level_8',
+        writer.writerow(['sample', 'match_id', 'marked_utc', 'captured_utc',
+            'level_2', 'level_3', 'level_4', 'level_5', 'level_6', 'level_7', 'level_8',
             'level_9', 'level_10', 'purple_7_8_9', 'observed_count', 'unknown_count', 'user_marked',
             'scope', 'metric', 'expected_pool_size', 'phase_source', 'coverage', 'attempted_mib',
             'eligible_mib', 'complete_selected_policy', 'complete_world_coverage'])
         for index, row in enumerate(records, 1):
             progress = row.get('scan_progress', {})
             writer.writerow([index, row['match_id'], row.get('marked_utc'), row.get('captured_utc'),
-                *(row['counts'][key] for key in keys), row['observed_count'], row['unknown_count'],
+                *(row['counts'].get(key, '') for key in keys), row['observed_count'], row['unknown_count'],
                 True, SCOPE, METRIC, EXPECTED_POOL_SIZE, row['phase_source'], 'observed_only',
                 *(progress.get(key) for key in ('attempted_mib', 'eligible_mib',
                     'complete_selected_policy', 'complete_world_coverage'))])

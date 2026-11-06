@@ -1,5 +1,6 @@
 """Offline opening-observation tests. No game or desktop interaction."""
 from copy import deepcopy
+import csv
 import json
 from pathlib import Path
 import sys
@@ -42,7 +43,7 @@ class FrameClassificationTests(unittest.TestCase):
         sample['rows'].append(deepcopy(sample['rows'][0]))
         result = classify_frame(sample)
         self.assertTrue(result['eligible'])
-        self.assertEqual(result['counts'], {'7': 1, '8': 2, '9': 1, '10': 2, 'purple': 4})
+        self.assertEqual(result['counts'], {'2': 0, '3': 0, '4': 66, '5': 0, '6': 0, '7': 1, '8': 2, '9': 1, '10': 2, 'purple': 4})
         self.assertEqual(result['observed_count'], 72)
         self.assertEqual(result['unknown_count'], 0)
 
@@ -50,6 +51,13 @@ class FrameClassificationTests(unittest.TestCase):
         sample = frame(101)
         self.assertEqual(sample_signature(sample['rows'], 'game:one'),
                          sample_signature(list(reversed(sample['rows'])), 'game:one'))
+
+    def test_all_requested_tiers_are_counted_in_the_same_observation(self):
+        rows = [row(index, 2 + (index - 1) % 9) for index in range(1, 73)]
+        observed = classify_frame(frame(101, rows))
+        self.assertTrue(observed['eligible'])
+        self.assertEqual(observed['counts'],
+                         dict({str(level): 8 for level in range(2, 11)}, purple=24))
 
     def test_replay_never_eligible(self):
         for key, value in [('replay', True), ('session_key', 'replay:game')]:
@@ -132,7 +140,7 @@ class OpeningStatisticsTests(unittest.TestCase):
         self.assertEqual(result['count'], 1)
         record = result['captured_sample']
         self.assertTrue(record['user_marked'])
-        self.assertEqual(record['counts'], {'7': 1, '8': 2, '9': 1, '10': 2, 'purple': 4})
+        self.assertEqual(record['counts'], {'2': 0, '3': 0, '4': 66, '5': 0, '6': 0, '7': 1, '8': 2, '9': 1, '10': 2, 'purple': 4})
         self.assertEqual(record['stable_seconds'], 3)
         self.assertEqual(record['distinct_samples'], 7)
         self.assertNotIn('rows', record)
@@ -140,7 +148,7 @@ class OpeningStatisticsTests(unittest.TestCase):
         self.assertEqual(self.make_stats().status()['count'], 1)
         summary = json.loads((self.directory / SUMMARY_JSON).read_text(encoding='utf-8'))
         self.assertEqual(summary['totals'], record['counts'])
-        self.assertEqual(summary['means'], {'7': 1, '8': 2, '9': 1, '10': 2, 'purple': 4})
+        self.assertEqual(summary['means'], {'2': 0, '3': 0, '4': 66, '5': 0, '6': 0, '7': 1, '8': 2, '9': 1, '10': 2, 'purple': 4})
         self.assertEqual(summary['expected_counts'], summary['means'])
         self.assertEqual(summary['actual_n'], 1)
         self.assertEqual(summary['attempt_count'], 1)
@@ -167,6 +175,64 @@ class OpeningStatisticsTests(unittest.TestCase):
         csv_text = (self.directory / SUMMARY_CSV).read_text(encoding='utf-8-sig')
         self.assertIn('complete_selected_policy,complete_world_coverage', csv_text)
         self.assertIn('observed_only', csv_text)
+
+    def test_old_records_remain_missing_while_new_low_tiers_use_their_own_denominator(self):
+        self.stats.arm_match('game:one')
+        self.capture()
+        path = self.directory / SAMPLE_FILE
+        legacy = json.loads(path.read_text(encoding='utf-8'))
+        for level in range(2, 7):
+            del legacy['counts'][str(level)]
+        path.write_text(json.dumps(legacy, sort_keys=True) + '\n', encoding='utf-8')
+        before = path.read_bytes()
+        collector = self.make_stats()
+        self.assertIsNone(collector.status()['error'])
+        self.assertEqual(path.read_bytes(), before)
+        collector._write_summaries()
+        missing = json.loads((self.directory / SUMMARY_JSON).read_text())
+        self.assertIsNone(missing['totals']['2'])
+        self.assertIsNone(missing['means']['2'])
+        self.assertEqual(missing['level_sample_counts']['2'], 0)
+        with (self.directory / SUMMARY_CSV).open(encoding='utf-8-sig', newline='') as stream:
+            self.assertEqual(next(csv.DictReader(stream))['level_2'], '')
+        self.clock.now = 110
+        collector.arm_match('game:one')
+        rows = [row(index, 2 + (index - 1) % 9) for index in range(1, 73)]
+        self.capture(start=111, rows=rows, stats=collector)
+        saved = [json.loads(line) for line in path.read_text().splitlines()]
+        self.assertEqual(saved[0], legacy)
+        summary = json.loads((self.directory / SUMMARY_JSON).read_text())
+        self.assertEqual(summary['sample_count'], 2)
+        for level in range(2, 7):
+            key = str(level)
+            self.assertEqual(summary['totals'][key], 8)
+            self.assertEqual(summary['means'][key], 8)
+            self.assertEqual(summary['level_sample_counts'][key], 1)
+        self.assertEqual(summary['means']['7'], 4.5)
+        self.assertEqual(summary['means']['purple'], 14)
+        self.assertEqual(summary['level_sample_counts']['7'], 2)
+        with (self.directory / SUMMARY_CSV).open(encoding='utf-8-sig', newline='') as stream:
+            exported = list(csv.DictReader(stream))
+        self.assertEqual(exported[0]['level_2'], '')
+        self.assertEqual(exported[1]['level_2'], '8')
+        self.assertEqual(self.make_stats().status()['count'], 2)
+
+    def test_corrupt_or_partial_extended_counts_are_rejected_without_overwriting(self):
+        self.stats.arm_match('game:one')
+        self.capture()
+        path = self.directory / SAMPLE_FILE
+        good = json.loads(path.read_text(encoding='utf-8'))
+        for change in ('missing', 'negative', 'boolean', 'too_many'):
+            bad = deepcopy(good)
+            if change == 'missing':
+                del bad['counts']['2']
+            else:
+                bad['counts']['2'] = {'negative': -1, 'boolean': True, 'too_many': 72}[change]
+            path.write_text(json.dumps(bad) + '\n', encoding='utf-8')
+            before = path.read_bytes()
+            collector = self.make_stats()
+            self.assertIn('load_failed', collector.status()['error'])
+            self.assertEqual(path.read_bytes(), before)
 
     def test_repeated_ui_ticks_are_not_independent_samples(self):
         self.stats.arm_match('game:one')
@@ -402,9 +468,36 @@ class OpeningStatisticsTests(unittest.TestCase):
         self.assertEqual(limited.status()['count'], 1)
 
     def test_invalid_target_rejected(self):
-        for target in (0, 51, True, 1.5):
+        for target in (0, 201, True, 1.5):
             with self.assertRaises(ValueError):
                 self.make_stats(target)
+
+    def test_existing_fifty_records_continue_to_two_hundred_after_restart(self):
+        stats = self.make_stats(target=50)
+        first_fifty = None
+        for index in range(200):
+            if index == 50:
+                first_fifty = (self.directory / SAMPLE_FILE).read_bytes()
+                stats = OpeningStatistics(self.directory, clock=self.clock,
+                                          utc_clock=lambda: '2026-10-28T15:00:00+00:00')
+                self.assertEqual(stats.status()['count'], 50)
+                self.assertEqual(stats.status()['target'], 200)
+                self.assertNotEqual(stats.status()['state'], 'complete')
+            start = 101 + 10 * index
+            self.clock.now = start - 1
+            stats.arm_match('game:one')
+            rows = frame(start)['rows']
+            rows[0]['fingerprint'] = f'unique-opening-{index}'
+            result = self.capture(start=start, rows=rows, stats=stats)
+            self.assertEqual(result['count'], index + 1)
+        self.assertTrue((self.directory / SAMPLE_FILE).read_bytes().startswith(first_fifty))
+        reloaded = OpeningStatistics(self.directory, clock=self.clock)
+        self.assertEqual(reloaded.status()['count'], 200)
+        self.assertEqual(reloaded.status()['state'], 'complete')
+        before = (self.directory / SAMPLE_FILE).read_bytes()
+        self.clock.now += 10
+        self.assertIsNone(reloaded.arm_match('game:one')['armed_session'])
+        self.assertEqual((self.directory / SAMPLE_FILE).read_bytes(), before)
 
     def test_samples_file_failure_does_not_raise_or_capture(self):
         self.stats.arm_match('game:one')
@@ -464,7 +557,7 @@ class OpeningStatisticsTests(unittest.TestCase):
         self.assertEqual(status['attempt_count'], 1)
         self.assertEqual(status['missing_count'], 1)
         summary = json.loads((self.directory / SUMMARY_JSON).read_text())
-        self.assertEqual(summary['expectations'], {'7': None, '8': None, '9': None, '10': None, 'purple': None})
+        self.assertEqual(summary['expectations'], {'2': None, '3': None, '4': None, '5': None, '6': None, '7': None, '8': None, '9': None, '10': None, 'purple': None})
         attempts = [json.loads(line) for line in (self.directory / ATTEMPT_FILE).read_text().splitlines()]
         self.assertEqual(attempts[0]['outcome'], 'missing')
         self.assertEqual(attempts[0]['last_observed_count'], 71)
@@ -497,7 +590,7 @@ class OpeningStatisticsTests(unittest.TestCase):
         self.assertEqual(summary['actual_n'], 2)
         self.assertEqual(summary['attempt_count'], 3)
         self.assertEqual(summary['missing_count'], 1)
-        self.assertEqual(summary['expectations'], {'7': .5, '8': 2, '9': 1, '10': 2.5, 'purple': 3.5})
+        self.assertEqual(summary['expectations'], {'2': 0, '3': 0, '4': 66, '5': 0, '6': 0, '7': .5, '8': 2, '9': 1, '10': 2.5, 'purple': 3.5})
         self.assertFalse(summary['target_reached'])
 
     def test_old_v1_files_are_not_read_or_changed(self):

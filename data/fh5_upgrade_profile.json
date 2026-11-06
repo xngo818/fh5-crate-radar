@@ -1,0 +1,657 @@
+{
+  "schema_version": 1,
+  "package_version": "3.688.109.0",
+  "pe_fingerprint": "ddde4475d98f79bce678d5d4d0b50e3fbc4dd937d11cd3f0bfa5c65ef1732abb",
+  "component_vtable_rva": 110380088,
+  "secondary_vtable_rva": 110380360,
+  "cars_descriptor_rva": 165327064,
+  "code_checks": [
+    {
+      "rva": 50839104,
+      "hex": "48895c241848896c242048894c2408565741564883ec20488bf9e8c173d2fe90488d05d1858c03488907488d05d7868c03488947104533f64489b788000000c7878c00000000004040488d9f90000000488bcbe878f6d9fe488d0531858c03488903488d054f858c03488943084c8973204c8973284c89733066c74338010148"
+    },
+    {
+      "rva": 36104704,
+      "hex": "48895c2418488974242048894c2408574883ec20488bf1b940000000e8ff4fb802488bf848894424304885c0745b0f57c00f1100c7400801000000c7400c01000000488d05cfdb54044889070f1147100f1147200f114730e853f3ffff48894710488d4f18488d157c98b207e8efebe7fe80671cfe33c0488947204889472848"
+    },
+    {
+      "rva": 50890976,
+      "hex": "48895c240855565741564157488d6c24e04881ec20010000450fb6f8448bf2488bf185d20f8f490400000f57c0f30f7f442458488b91b80000004885d2742f8b420885c074288d4801f00fb14a08740685c075f2eb18488b86b00000004889442458488b86b80000004889442460488b4c2458488b99900000004885db740bf0"
+    },
+    {
+      "rva": 32256048,
+      "hex": "488bc2488bd1488bc8e912ab22ffcccc8b0239010f92c0c3cccccccccccccccc48895c240848895424105556574883ec50498be8488bfa33db895c244048891ac7442440010000004d85c00f84990000008d4b28e89709f302488bf04885c0745a885c2438885c2430885c2428885c242041b101450fb6c133d2488d8c248000"
+    }
+  ],
+  "rows": [
+    {
+      "key": 1,
+      "level": 1,
+      "car_id": 1435,
+      "preset": 60,
+      "children": [
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "name": "1963 Volkswagen Beetle"
+    },
+    {
+      "key": 2,
+      "level": 2,
+      "car_id": 1591,
+      "preset": 4294967295,
+      "children": [
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      "name": "1984 Peugeot 205 Turbo 16"
+    },
+    {
+      "key": 3,
+      "level": 2,
+      "car_id": 1231,
+      "preset": 4294967295,
+      "children": [
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      "name": "2010 Volkswagen Golf R"
+    },
+    {
+      "key": 4,
+      "level": 2,
+      "car_id": 260,
+      "preset": 4294967295,
+      "children": [
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      "name": "1973 Porsche 911 Carrera RS"
+    },
+    {
+      "key": 5,
+      "level": 2,
+      "car_id": 420,
+      "preset": 4294967295,
+      "children": [
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      "name": "2003 Audi RS 6"
+    },
+    {
+      "key": 6,
+      "level": 2,
+      "car_id": 3183,
+      "preset": 4294967295,
+      "children": [
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      "name": "1967 Ford Racing Escort Mk1"
+    },
+    {
+      "key": 7,
+      "level": 3,
+      "car_id": 633,
+      "preset": 4294967295,
+      "children": [
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "name": "1983 Audi Sport quattro"
+    },
+    {
+      "key": 8,
+      "level": 3,
+      "car_id": 2019,
+      "preset": 50,
+      "children": [
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "name": "2003 Ford Focus RS"
+    },
+    {
+      "key": 9,
+      "level": 3,
+      "car_id": 2872,
+      "preset": 4294967295,
+      "children": [
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "name": "2019 Hyundai Veloster N"
+    },
+    {
+      "key": 10,
+      "level": 3,
+      "car_id": 3187,
+      "preset": 4294967295,
+      "children": [
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "name": "2018 Porsche Macan LPR Rally Raid"
+    },
+    {
+      "key": 11,
+      "level": 3,
+      "car_id": 2586,
+      "preset": 4294967295,
+      "children": [
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "name": "2015 Volvo V60 Polestar"
+    },
+    {
+      "key": 12,
+      "level": 4,
+      "car_id": 1350,
+      "preset": 4294967295,
+      "children": [
+        17,
+        18,
+        19,
+        20,
+        21
+      ],
+      "name": "2011 BMW X5 M"
+    },
+    {
+      "key": 13,
+      "level": 4,
+      "car_id": 2179,
+      "preset": 4294967295,
+      "children": [
+        17,
+        18,
+        19,
+        20,
+        21
+      ],
+      "name": "2015 Audi S1"
+    },
+    {
+      "key": 14,
+      "level": 4,
+      "car_id": 1323,
+      "preset": 4294967295,
+      "children": [
+        17,
+        18,
+        19,
+        20,
+        21
+      ],
+      "name": "2011 SUBARU WRX STI"
+    },
+    {
+      "key": 15,
+      "level": 4,
+      "car_id": 1009,
+      "preset": 4294967295,
+      "children": [
+        17,
+        18,
+        19,
+        20,
+        21
+      ],
+      "name": "2008 Mitsubishi Lancer Evolution X GSR"
+    },
+    {
+      "key": 16,
+      "level": 4,
+      "car_id": 3132,
+      "preset": 4294967295,
+      "children": [
+        17,
+        18,
+        19,
+        20,
+        21
+      ],
+      "name": "2018 MINI X-Raid John Cooper Works Buggy"
+    },
+    {
+      "key": 17,
+      "level": 5,
+      "car_id": 3188,
+      "preset": 4294967295,
+      "children": [
+        22,
+        23,
+        24,
+        25,
+        26
+      ],
+      "name": "1989 Porsche #65 Rothsport Racing 911 'Desert Flyer'"
+    },
+    {
+      "key": 18,
+      "level": 5,
+      "car_id": 2865,
+      "preset": 4294967295,
+      "children": [
+        22,
+        23,
+        24,
+        25,
+        26
+      ],
+      "name": "2017 Maserati Levante S"
+    },
+    {
+      "key": 19,
+      "level": 5,
+      "car_id": 3404,
+      "preset": 51,
+      "children": [
+        22,
+        23,
+        24,
+        25,
+        26
+      ],
+      "name": "2020 Ford #2069 Ford Performance Bronco R"
+    },
+    {
+      "key": 20,
+      "level": 5,
+      "car_id": 3109,
+      "preset": 4294967295,
+      "children": [
+        22,
+        23,
+        24,
+        25,
+        26
+      ],
+      "name": "2018 DeBerti F-150 Prerunner Truck"
+    },
+    {
+      "key": 21,
+      "level": 5,
+      "car_id": 2357,
+      "preset": 4294967295,
+      "children": [
+        22,
+        23,
+        24,
+        25,
+        26
+      ],
+      "name": "2017 Ford Focus RS"
+    },
+    {
+      "key": 22,
+      "level": 6,
+      "car_id": 2009,
+      "preset": 4294967295,
+      "children": [
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "name": "2013 Audi RS 7 Sportback"
+    },
+    {
+      "key": 23,
+      "level": 6,
+      "car_id": 3031,
+      "preset": 4294967295,
+      "children": [
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "name": "1985 Porsche #185 959 Prodrive Rally Raid"
+    },
+    {
+      "key": 24,
+      "level": 6,
+      "car_id": 2515,
+      "preset": 52,
+      "children": [
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "name": "2011 Penhall The Cholla"
+    },
+    {
+      "key": 25,
+      "level": 6,
+      "car_id": 3089,
+      "preset": 53,
+      "children": [
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "name": "2018 Exomotive Exocet Off-Road"
+    },
+    {
+      "key": 26,
+      "level": 6,
+      "car_id": 2430,
+      "preset": 4294967295,
+      "children": [
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "name": "2016 Ariel Nomad"
+    },
+    {
+      "key": 27,
+      "level": 7,
+      "car_id": 2742,
+      "preset": 4294967295,
+      "children": [
+        32,
+        33,
+        34,
+        35,
+        36
+      ],
+      "name": "2016 Jeep Trailcat"
+    },
+    {
+      "key": 28,
+      "level": 7,
+      "car_id": 3064,
+      "preset": 4294967295,
+      "children": [
+        32,
+        33,
+        34,
+        35,
+        36
+      ],
+      "name": "2018 Mercedes-AMG GT 4-Door Coupe"
+    },
+    {
+      "key": 29,
+      "level": 7,
+      "car_id": 2793,
+      "preset": 4294967295,
+      "children": [
+        32,
+        33,
+        34,
+        35,
+        36
+      ],
+      "name": "1967 Ferrari #24 Ferrari Spa 330 P4"
+    },
+    {
+      "key": 30,
+      "level": 7,
+      "car_id": 3489,
+      "preset": 54,
+      "children": [
+        32,
+        33,
+        34,
+        35,
+        36
+      ],
+      "name": "2021 Ford Bronco"
+    },
+    {
+      "key": 31,
+      "level": 7,
+      "car_id": 2773,
+      "preset": 4294967295,
+      "children": [
+        32,
+        33,
+        34,
+        35,
+        36
+      ],
+      "name": "2018 Porsche Cayenne Turbo"
+    },
+    {
+      "key": 32,
+      "level": 8,
+      "car_id": 2147,
+      "preset": 4294967295,
+      "children": [
+        37,
+        38,
+        39,
+        40,
+        41
+      ],
+      "name": "1986 MG Metro 6R4"
+    },
+    {
+      "key": 33,
+      "level": 8,
+      "car_id": 2618,
+      "preset": 4294967295,
+      "children": [
+        37,
+        38,
+        39,
+        40,
+        41
+      ],
+      "name": "2017 Nissan GT-R (R35)"
+    },
+    {
+      "key": 34,
+      "level": 8,
+      "car_id": 1173,
+      "preset": 4294967295,
+      "children": [
+        37,
+        38,
+        39,
+        40,
+        41
+      ],
+      "name": "2010 Lamborghini Murcielago LP 670-4 SV"
+    },
+    {
+      "key": 35,
+      "level": 8,
+      "car_id": 2663,
+      "preset": 4294967295,
+      "children": [
+        37,
+        38,
+        39,
+        40,
+        41
+      ],
+      "name": "2016 RJ Anderson #37 Polaris RZR-Rockstar Energy Pro 2 Truck"
+    },
+    {
+      "key": 36,
+      "level": 8,
+      "car_id": 2739,
+      "preset": 4294967295,
+      "children": [
+        37,
+        38,
+        39,
+        40,
+        41
+      ],
+      "name": "2017 Chevrolet Camaro ZL1"
+    },
+    {
+      "key": 37,
+      "level": 9,
+      "car_id": 2937,
+      "preset": 55,
+      "children": [
+        42,
+        43,
+        44,
+        45,
+        46
+      ],
+      "name": "2017 Ford #14 Rahal Letterman Lanigan Racing GRC Fiesta"
+    },
+    {
+      "key": 38,
+      "level": 9,
+      "car_id": 2984,
+      "preset": 4294967295,
+      "children": [
+        42,
+        43,
+        44,
+        45,
+        46
+      ],
+      "name": "1991 Hoonigan Gymkhana 10 Ford Escort Cosworth Group A"
+    },
+    {
+      "key": 39,
+      "level": 9,
+      "car_id": 2841,
+      "preset": 4294967295,
+      "children": [
+        42,
+        43,
+        44,
+        45,
+        46
+      ],
+      "name": "2018 Jeep Grand Cherokee Trackhawk"
+    },
+    {
+      "key": 40,
+      "level": 9,
+      "car_id": 3007,
+      "preset": 59,
+      "children": [
+        42,
+        43,
+        44,
+        45,
+        46
+      ],
+      "name": "2017 Volkswagen #34 Volkswagen Andretti Rallycross Beetle"
+    },
+    {
+      "key": 41,
+      "level": 9,
+      "car_id": 3115,
+      "preset": 57,
+      "children": [
+        42,
+        43,
+        44,
+        45,
+        46
+      ],
+      "name": "2016 Hoonigan Gymkhana 10 Ford Focus RS RX"
+    },
+    {
+      "key": 42,
+      "level": 10,
+      "car_id": 3119,
+      "preset": 4294967295,
+      "children": [],
+      "name": "1986 Hoonigan Ford RS200 Evolution"
+    },
+    {
+      "key": 43,
+      "level": 10,
+      "car_id": 3650,
+      "preset": 4294967295,
+      "children": [],
+      "name": "2021 Mercedes-AMG Mercedes-AMG ONE"
+    },
+    {
+      "key": 44,
+      "level": 10,
+      "car_id": 2616,
+      "preset": 4294967295,
+      "children": [],
+      "name": "2016 Lamborghini Centenario LP 770-4"
+    },
+    {
+      "key": 45,
+      "level": 10,
+      "car_id": 2935,
+      "preset": 58,
+      "children": [],
+      "name": "2018 Funco Motorsports F9"
+    },
+    {
+      "key": 46,
+      "level": 10,
+      "car_id": 3128,
+      "preset": 56,
+      "children": [],
+      "name": "2017 Ford #25 'Brocky' Ultra4 Bronco RTR"
+    },
+    {
+      "key": 47,
+      "level": 1,
+      "car_id": 3810,
+      "preset": 64,
+      "children": [
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "name": "2010 Nissan Tsuru"
+    }
+  ],
+  "validation": "One online 6-to-7 trial; other normal upgrade grades pending live validation. No same-level or cross-grade mode."
+}

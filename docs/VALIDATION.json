@@ -1,13 +1,15 @@
 {
-  "date": "2026-10-27",
-  "revision": "first-map-v10-source",
-  "source_unit_tests": 424,
-  "result": "passed",
-  "checks": [
-    "synthetic radar replay: 8 rows",
-    "synthetic map preview: 8 markers"
-  ],
-  "game_connected": false,
-  "windows_binary_rebuilt": false,
-  "source_edition_graphics": "grid background and fallback tier markers"
+  "revision": "2.0",
+  "internal_build": "V5",
+  "source_tests_run": 470,
+  "source_tests_passed": 469,
+  "source_tests_skipped_private_capture": 1,
+  "windows_replay_rows": {
+    "radar": 8,
+    "map": 8
+  },
+  "application_code_matches_local_v5": true,
+  "new_live_game_test": false,
+  "windows_zip_sha256": "533025d0498e8e6faf71be0c09eadfdeb53e1478e533d75ac8ecc6423b26a04a",
+  "windows_exe_sha256": "e8c2008f40205b9bcd11daf46ff8a354fd81510be2cfcba0e80786660d69bca8"
 }

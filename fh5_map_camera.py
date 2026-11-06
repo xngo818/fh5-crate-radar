@@ -36,9 +36,6 @@ MAX_HOT_REGIONS = 16
 ALLOCATION_ANCHOR_OFFSETS = (0x2333D0,)
 MAX_ANCHOR_PROBES_PER_STEP = 64
 ACQUISITION_TARGET_SECONDS = 20.0
-METADATA_REFRESH_SECONDS = 2.0
-COLD_REVISIT_SECONDS = 1.0
-COLD_WINDOW_BYTES = 4 * 1024 * 1024
 
 
 def _finite(values):
@@ -230,7 +227,6 @@ class CameraLocator:
                 if len(self._hot_region_order) >= MAX_HOT_REGIONS:
                     break
         self.hot_regions = set(self._hot_region_order)
-        self._has_active_hint = bool(self.hot_regions)
         self.hot_ranges = []
         self.hot_anchors = []
         self.inactive_hint_regions = {}
@@ -243,7 +239,6 @@ class CameraLocator:
             self.hot_ranges.clear()
             self.hot_anchors.clear()
             self.inactive_hint_regions.clear()
-            self._has_active_hint = False
         self.regions = None
         self._scan_regions = None
         self.index = 0
@@ -265,28 +260,11 @@ class CameraLocator:
         self._anchor_probe_index = 0
         self.anchor_probe_reads = self.anchor_probe_read_bytes = 0
         self.anchor_probe_hits = 0
-        self._next_metadata_refresh = 0.0
-        self.metadata_refresh_error = None
-        self.metadata_refresh_failures = 0
-        self._metadata_failure_streak = 0
-        self._urgent_regions = []
-        self._urgent_index = 0
-        self._urgent_address = None
-        self._urgent_tail = b''
-        self._urgent_full_turn = False
-        self._cold_cursor = 0
-        self._cold_offsets = {}
-        self._next_cold_visit = 0.0
-        self.cold_passes = 0
         self.reason = 'locator_not_started'
 
     def _metadata(self, process):
         self.metadata_queries += 1
-        # An early game process can briefly exceed a one-second complete VA
-        # enumeration. Retry with a bounded larger deadline instead of making
-        # that initial timeout a permanent inability to discover any camera.
-        allowance = min(4.0, 1.0+self._metadata_failure_streak)
-        metadata = process.regions(deadline=time.monotonic()+allowance)
+        metadata = process.regions(deadline=time.monotonic()+1)
         return [r for r in metadata if (
             r.get('state') == 0x1000 and r.get('type') == 0x20000
             and not r.get('protect', 0) & 0x101
@@ -308,120 +286,6 @@ class CameraLocator:
                 2 if hint_distance == 0 else 3 if min(anchor_distance, hint_distance) <= HOT_RADIUS
                 else 4 if near_range else 5)
         return rank, min(anchor_distance, hint_distance), low
-
-    def _prepare_anchor_probes(self):
-        ordered = sorted(self.regions, key=lambda r: (
-            not 16*1024*1024 <= r['size'] <= 128*1024*1024,
-            self._priority(r)))
-        self._anchor_probes = [r['base']+offset for r in ordered
-                               for offset in ALLOCATION_ANCHOR_OFFSETS
-                               if offset >= READ_BEFORE and offset+READ_AFTER <= r['size']]
-        self._anchor_probe_index = 0
-
-    def _refresh_metadata(self, process, now):
-        # A timeout is a failed observation, not an empty address space or a
-        # reason to throw away a multi-GiB sweep's already completed prefix.
-        started = time.monotonic()
-        try:
-            regions = self._metadata(process)
-        except (OSError, TimeoutError, ProcessLookupError, ValueError) as error:
-            self.metadata_refresh_error = str(error)
-            self.metadata_refresh_failures += 1
-            self._metadata_failure_streak += 1
-            self.complete = False
-            return False
-        finally:
-            # Back off from completion, including a slow native enumeration;
-            # a 4 s timeout must not make the next 2 s retry immediately due.
-            self._next_metadata_refresh = (now+max(0.0, time.monotonic()-started)
-                                           +METADATA_REFRESH_SECONDS)
-        previous, self.regions = self.regions, regions
-        self.metadata_refresh_error = None
-        self._metadata_failure_streak = 0
-        if previous is None:
-            self._scan_regions = sorted(regions, key=self._priority)
-            self._prepare_anchor_probes()
-        else:
-            # Newly committed or expanded portions must not wait for the old
-            # immutable full-scan frontier to finish. Diff coverage, not just
-            # bases: VirtualQueryEx may split or merge the same allocation.
-            previous = sorted(previous, key=lambda r: r['base'])
-            previous_index = 0
-            additions = []
-            for region in sorted(regions, key=lambda r: r['base']):
-                cursor, end = region['base'], region['base']+region['size']
-                while (previous_index < len(previous)
-                       and previous[previous_index]['base']+previous[previous_index]['size'] <= cursor):
-                    previous_index += 1
-                overlap = previous_index
-                while overlap < len(previous):
-                    old = previous[overlap]
-                    overlap += 1
-                    low, high = old['base'], old['base']+old['size']
-                    if high <= cursor:
-                        continue
-                    if low >= end:
-                        break
-                    if cursor < low:
-                        additions.append({'base': cursor, 'size': min(low, end)-cursor})
-                    cursor = max(cursor, high)
-                    if cursor >= end:
-                        break
-                if cursor < end:
-                    additions.append({'base': cursor, 'size': end-cursor})
-            if additions:
-                # Small camera allocations must not queue behind a freshly
-                # committed multi-GiB resource heap, even if that heap's local
-                # scan was already underway. Preserve its remaining suffix;
-                # only the 44-byte head overlap is replayed when resuming it.
-                pending = [dict(r) for r in self._urgent_regions[self._urgent_index:]]
-                if pending and self._urgent_address is not None:
-                    first = pending[0]
-                    finish = first['base']+first['size']
-                    first['base'] = max(first['base'], self._urgent_address-44)
-                    first['size'] = finish-first['base']
-                additions.sort(key=lambda r: (r['size'] > 128*1024*1024,
-                                               not 16*1024*1024 <= r['size'] <= 128*1024*1024,
-                                               r['size'], r['base']))
-                self._urgent_regions = additions+pending
-                self._urgent_index = 0
-                self._urgent_address, self._urgent_tail = None, b''
-            if self._anchor_probe_index >= len(self._anchor_probes or ()):
-                self._prepare_anchor_probes()
-            if self._urgent_index < len(self._urgent_regions):
-                self.complete = False
-        return True
-
-    def _begin_cold_pass(self, now):
-        # Before the first proven active camera there are no useful same-
-        # session camera addresses. Revisit one bounded allocation window so a
-        # camera written behind the full cursor can be found on the first map.
-        # A prefix plus rotating slice also covers late camera construction at
-        # offsets other than the optional allocation-relative anchor probe.
-        if self._has_active_hint or not self.regions:
-            return
-        if self._urgent_index < len(self._urgent_regions) or now < self._next_cold_visit:
-            return
-        regions = sorted((r for r in self.regions if r['size'] <= 128*1024*1024), key=lambda r: (
-            not 16*1024*1024 <= r['size'] <= 128*1024*1024,
-            self._priority(r)))
-        if not regions:
-            return
-        region = regions[self._cold_cursor % len(regions)]
-        self._cold_cursor += 1
-        base, size = region['base'], region['size']
-        prefix = min(size, COLD_WINDOW_BYTES)
-        windows = [(base, prefix)]
-        if prefix < size <= 128*1024*1024:
-            offset = self._cold_offsets.get(base, prefix)
-            windows.append((base+offset, min(COLD_WINDOW_BYTES, size-offset)))
-            self._cold_offsets[base] = (prefix if offset+COLD_WINDOW_BYTES >= size
-                                        else offset+COLD_WINDOW_BYTES)
-        self._urgent_regions = [{'base': address, 'size': length} for address, length in windows]
-        self._urgent_index = 0
-        self._urgent_address, self._urgent_tail = None, b''
-        self._next_cold_visit = now+COLD_REVISIT_SECONDS
-        self.cold_passes += 1
 
     def _begin_hot_pass(self, process, now, *, metadata_is_fresh=False):
         if not (self.hot_anchors or self.hot_ranges or self.hot_regions):
@@ -498,18 +362,29 @@ class CameraLocator:
             return []
         if type(byte_limit) is not int or not 0 < byte_limit <= MAX_STEP_BYTES:
             raise ValueError('locator payload step exceeds 2MiB')
-        if now >= self._next_metadata_refresh:
-            self._refresh_metadata(process, now)
-        if self.regions is None:
-            self.reason = 'locator_metadata_retry_pending'
-            return []
         if self.complete:
             return []
+        metadata_is_fresh = False
+        if self.regions is None:
+            # Metadata enumeration carries no target payload. Process.regions
+            # raises on timeout, so a partial list is never called complete.
+            self.regions = self._metadata(process)
+            self._scan_regions = sorted(self.regions, key=self._priority)
+            metadata_is_fresh = True
+            # Typical map pools in the saved evidence are 42--63 MiB. Prefer
+            # those allocations but still consider every eligible region.
+            # An allocation boundary may split, so this hint is optional.
+            ordered = sorted(self.regions, key=lambda r: (
+                not 16*1024*1024 <= r['size'] <= 128*1024*1024,
+                self._priority(r)))
+            self._anchor_probes = [r['base']+offset for r in ordered
+                                   for offset in ALLOCATION_ANCHOR_OFFSETS
+                                   if offset >= READ_BEFORE and offset+READ_AFTER <= r['size']]
         found, consumed = [], 0
         started = time.monotonic()
         hot_pending = self._hot_index < len(self._hot_regions)
         if not hot_pending and now >= self._next_hot_visit:
-            self._begin_hot_pass(process, now, metadata_is_fresh=True)
+            self._begin_hot_pass(process, now, metadata_is_fresh=metadata_is_fresh)
         hot_pending = self._hot_index < len(self._hot_regions)
         # Probe a bounded set of allocation-relative anchors before streaming
         # multi-GiB regions. Successful inactive geometry only narrows search.
@@ -538,38 +413,27 @@ class CameraLocator:
                 self._next_hot_visit = 0.0
         hot_pending = self._hot_index < len(self._hot_regions)
         if not hot_pending and now >= self._next_hot_visit:
-            self._begin_hot_pass(process, now, metadata_is_fresh=True)
-        if self._hot_index >= len(self._hot_regions):
-            self._begin_cold_pass(now)
+            self._begin_hot_pass(process, now, metadata_is_fresh=metadata_is_fresh)
         while consumed < byte_limit:
             if time.monotonic()-started > .04:
                 break
-            urgent = self._urgent_index < len(self._urgent_regions)
-            full = self.index < len(self._scan_regions)
-            if urgent and not (full and self._urgent_full_turn):
-                kind, prefix = 'urgent', '_urgent'
-            elif self._hot_index < len(self._hot_regions) and not urgent:
-                kind, prefix = 'hot', '_hot'
-            elif full:
-                kind, prefix = 'full', None
-            else:
-                break
-            if prefix:
-                region = getattr(self, prefix+'_regions')[getattr(self, prefix+'_index')]
-                address = getattr(self, prefix+'_address')
-                address = region['base'] if address is None else address
-                tail = getattr(self, prefix+'_tail')
-            else:
+            hot = self._hot_index < len(self._hot_regions)
+            if hot:
+                region = self._hot_regions[self._hot_index]
+                address = self._hot_address if self._hot_address is not None else region['base']
+                tail = self._hot_tail
+            elif self.index < len(self._scan_regions):
                 region = self._scan_regions[self.index]
                 address = self.address if self.address is not None else region['base']
                 tail = self.tail
+            else:
+                break
             end = region['base']+region['size']
             size = min(512*1024, byte_limit-consumed, end-address)
             if size <= 0:
-                if prefix:
-                    setattr(self, prefix+'_index', getattr(self, prefix+'_index')+1)
-                    setattr(self, prefix+'_address', None)
-                    setattr(self, prefix+'_tail', b'')
+                if hot:
+                    self._hot_index += 1
+                    self._hot_address, self._hot_tail = None, b''
                 else:
                     self.index += 1
                     self.address, self.tail = None, b''
@@ -577,7 +441,7 @@ class CameraLocator:
             blob = process.read(address, size)
             consumed += size
             self.read_bytes += size
-            if kind == 'hot':
+            if hot:
                 self.hot_read_bytes += size
             if blob is not None and len(blob) == size:
                 data = tail+blob
@@ -588,14 +452,12 @@ class CameraLocator:
                 self.read_failures += 1
                 self.last_read_failure_address = address
             next_address = address+size
-            if prefix:
-                setattr(self, prefix+'_address', next_address)
-                setattr(self, prefix+'_tail', tail)
+            if hot:
+                self._hot_address, self._hot_tail = next_address, tail
                 if next_address >= end:
-                    setattr(self, prefix+'_index', getattr(self, prefix+'_index')+1)
-                    setattr(self, prefix+'_address', None)
-                    setattr(self, prefix+'_tail', b'')
-                    if kind == 'hot' and self._hot_index >= len(self._hot_regions):
+                    self._hot_index += 1
+                    self._hot_address, self._hot_tail = None, b''
+                    if self._hot_index >= len(self._hot_regions):
                         # A multi-step hot pass can take longer than its
                         # nominal period. Leave a full-scan progress interval
                         # after it finishes, preventing hint flood starvation.
@@ -605,13 +467,9 @@ class CameraLocator:
                 if next_address >= end:
                     self.index += 1
                     self.address, self.tail = None, b''
-            if urgent:
-                self._urgent_full_turn = kind != 'full'
         self.complete = (self._anchor_probe_index >= len(self._anchor_probes or ())
                          and self.index >= len(self._scan_regions)
-                         and self._hot_index >= len(self._hot_regions)
-                         and self._urgent_index >= len(self._urgent_regions)
-                         and self.metadata_refresh_error is None)
+                         and self._hot_index >= len(self._hot_regions))
         self.reason = 'locator_complete' if self.complete else 'locator_scanning'
         return list(dict.fromkeys(found))[:MAX_CANDIDATES]
 
@@ -629,7 +487,6 @@ class CameraLocator:
             self.inactive_hint_regions[address] = containing['base']
         else:
             self.inactive_hint_regions.pop(address, None)
-            self._has_active_hint = True
         if address in self.hot_anchors:
             self.hot_anchors.remove(address)
         if active:
@@ -669,14 +526,6 @@ class CameraLocator:
                 'hot_search_anchors': list(self.hot_anchors),
                 'inactive_geometry_hint_regions': dict(self.inactive_hint_regions),
                 'metadata_queries': self.metadata_queries,
-                'metadata_refresh_error': self.metadata_refresh_error,
-                'metadata_refresh_failures': self.metadata_refresh_failures,
-                'metadata_failure_streak': self._metadata_failure_streak,
-                'metadata_query_budget_seconds': min(4.0, 1.0+self._metadata_failure_streak),
-                'next_metadata_refresh_monotonic': self._next_metadata_refresh,
-                'incremental_interval_count': len(self._urgent_regions),
-                'incremental_interval_index': self._urgent_index,
-                'cold_passes': self.cold_passes,
                 'allocation_anchor_probe_reads': self.anchor_probe_reads,
                 'allocation_anchor_probe_read_bytes': self.anchor_probe_read_bytes,
                 'allocation_anchor_probe_hits': self.anchor_probe_hits,
@@ -757,15 +606,12 @@ class CameraTracker:
                 elif now >= self._next_rescan:
                     self.locator.reset()
                     self._next_rescan = None
-            # Once a structural candidate exists, its second activity sample
-            # has a strict 250 ms deadline. Sampling it must precede another
-            # potentially slow metadata query or a heap discovery step.
-            if self.camera_address is None and not self.pending:
+            if self.camera_address is None and len(self.pending) < MAX_CANDIDATES:
                 reserve = MAX_CANDIDATES*READ_SIZE
                 for address in self.locator.step(process, now, MAX_STEP_BYTES-reserve):
                     if len(self.pending) < MAX_CANDIDATES:
                         self.pending.setdefault(address, ClockActivity())
-            active, invalid, frozen, restarting = [], [], [], []
+            active, invalid, frozen = [], [], []
             for address, activity in list(self.pending.items()):
                 if not self.locator.contains(address-READ_BEFORE, READ_SIZE):
                     invalid.append(address)
@@ -788,13 +634,8 @@ class CameraTracker:
                                   package_version=self.package_version,
                                   reason='camera_geometry_and_clock_active')
                     active.append(sample)
-                elif activity.reason == 'activity_frozen':
+                elif activity.reason in ('activity_frozen', 'activity_sample_gap', 'activity_time_reversed'):
                     frozen.append(address)
-                elif activity.reason in ('activity_sample_gap', 'activity_time_reversed'):
-                    # observe() has already established a new first sample.
-                    # Retain the coherent candidate for a prompt second read,
-                    # rather than throwing it back into slow heap discovery.
-                    restarting.append(address)
             for address in invalid:
                 self.pending.pop(address, None)
             for address in frozen:
@@ -809,9 +650,6 @@ class CameraTracker:
                 self._search_started = now
                 self.locator.reset()
                 self._next_rescan = None
-            if self.camera_address in restarting:
-                self.camera_address = None
-                self._search_started = now
             if len(active) > 1:
                 self.camera_address = None
                 self._status('ambiguous_active_cameras', active_addresses=[s['camera_address'] for s in active])
@@ -840,9 +678,7 @@ class CameraTracker:
         except (OSError, TimeoutError, ProcessLookupError, ValueError) as error:
             self.pending.clear()
             self.camera_address = None
-            # A transient exact-read failure invalidates the frame, but does
-            # not erase completed full-scan progress or bounded retry state.
-            self.locator.complete = False
+            self.locator.reset()
             self._next_rescan = None
             self._status('camera_read_error', error=str(error))
             return None

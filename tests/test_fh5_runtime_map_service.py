@@ -172,24 +172,6 @@ class RuntimeMapTests(unittest.TestCase):
         self.assertIsNone(snapshot['map_frame'])
         self.assertEqual(snapshot['map_reason'], 'map_service_start_failed')
 
-    def test_ordinary_launch_status_preserves_camera_failure_diagnostics(self):
-        self.runtime.start()
-        diagnostics = {'reason': 'camera_discovery_in_progress',
-                       'locator_read_bytes': 8 * 1024**2,
-                       'locator_diagnostics': {'metadata_refresh_error': 'synthetic timeout'}}
-        self.created[0].snapshot = Mock(return_value={
-            'map_state': 'seeking', 'reason': 'camera_discovery_in_progress',
-            'map_frame': None, 'tracker_status': diagnostics,
-            'error': 'synthetic service diagnostic'})
-        self.runtime._write_scan_status(force=True)
-        path = self.directory / 'state' / 'scan_status.json'
-        report = json.loads(path.read_text(encoding='utf-8'))
-        self.assertEqual(report['map_tracker'], diagnostics)
-        self.assertEqual(report['map_error'], 'synthetic service diagnostic')
-        self.assertEqual(report['fresh_row_count'], 1)
-        self.assertNotIn('map_frame', report)
-        self.assertNotIn('rows', report)
-
     def test_close_stops_map_before_worker_join_and_is_idempotent(self):
         self.runtime.start()
         self.runtime.close()

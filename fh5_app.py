@@ -78,14 +78,14 @@ class Application:
         self.recorder = FrameRecorder(record_path)
         self.closed, self.after_id, self.save_id = False, None, None
         self.keys = Hotkeys()
-        self.opening_stats = OpeningStatistics(STATE_DIR / 'opening_statistics', target=50)
+        self.opening_stats = OpeningStatistics(STATE_DIR / 'opening_statistics', target=200)
         self.stats_next = 0.0
         self.pad = ControllerHotkey(config.get('pad_button', 0x4000))
         self.map_pad = ControllerHotkey(config.get('map_pad_button', 0x8000))
         self.root = tk.Tk()
-        self.root.title('FH5 车包坐标 · 实验接入')
-        self.root.geometry('980x610')
-        self.root.minsize(760, 480)
+        self.root.title('FH5 车包雷达 · 升级选车与10级规则 V3')
+        self.root.geometry('1000x700')
+        self.root.minsize(800, 620)
         self.root.protocol('WM_DELETE_WINDOW', self.close)
         self.root.configure(bg='#FFFFFF')
         self.visible = tk.BooleanVar(value=config['visible'])
@@ -93,7 +93,15 @@ class Application:
         self.min_level = tk.StringVar(value=str(self._minimum_level()))
         self.span = tk.StringVar(value=str(int(config['range'])))
         self.alpha = tk.DoubleVar(value=config['alpha'])
-        toolbar = ttk.Frame(self.root, padding=12)
+        self.notebook = ttk.Notebook(self.root)
+        self.notebook.pack(fill='both', expand=True)
+        radar_page = ttk.Frame(self.notebook)
+        upgrade_page = ttk.Frame(self.notebook)
+        level10_page = ttk.Frame(self.notebook)
+        self.notebook.add(radar_page, text='车包雷达与地图')
+        self.notebook.add(upgrade_page, text='升级选车')
+        self.notebook.add(level10_page, text='10级换车')
+        toolbar = ttk.Frame(radar_page, padding=12)
         toolbar.pack(fill='x')
         self.toggle_button = ttk.Button(toolbar, command=self.toggle)
         self.toggle_button.pack(side='left')
@@ -108,7 +116,7 @@ class Application:
         ttk.Scale(toolbar, from_=0.2, to=1, variable=self.alpha,
                    command=lambda value: self.changed()).pack(side='left', fill='x', expand=True)
         ttk.Button(toolbar, text='退出', command=self.close).pack(side='right', padx=(12, 0))
-        controller_row = ttk.Frame(self.root, padding=(12, 0, 12, 4))
+        controller_row = ttk.Frame(radar_page, padding=(12, 0, 12, 4))
         controller_row.pack(fill='x')
         ttk.Label(controller_row, text='手柄开关雷达').pack(side='left', padx=(0, 8))
         self.pad_options = dict(BUTTON_CHOICES)
@@ -122,7 +130,7 @@ class Application:
         self.pad_combo.bind('<<ComboboxSelected>>', self.controller_changed)
         ttk.Label(controller_row, text='按一下切换显示；选择后自动保存。',
                   foreground='#687381').pack(side='left', padx=12)
-        map_controller_row = ttk.Frame(self.root, padding=(12, 0, 12, 4))
+        map_controller_row = ttk.Frame(radar_page, padding=(12, 0, 12, 4))
         map_controller_row.pack(fill='x')
         ttk.Label(map_controller_row, text='手柄开关地图车包').pack(side='left', padx=(0, 8))
         selected_map_button = next((label for label, mask in BUTTON_CHOICES
@@ -141,7 +149,7 @@ class Application:
         minimum.pack(side='left')
         minimum.bind('<Return>', lambda event: self.changed())
         minimum.bind('<FocusOut>', lambda event: self.changed())
-        stats_row = ttk.Frame(self.root, padding=(12, 0, 12, 4))
+        stats_row = ttk.Frame(radar_page, padding=(12, 0, 12, 4))
         stats_row.pack(fill='x')
         ttk.Button(stats_row, text='记录新一局', command=self.mark_opening_match).pack(side='left')
         ttk.Button(stats_row, text='取消待采集', command=self.cancel_opening_match).pack(side='left', padx=8)
@@ -149,11 +157,11 @@ class Application:
         ttk.Label(stats_row, textvariable=self.stats_status, foreground='#405467',
                   wraplength=650).pack(side='left', padx=8)
         self.status = tk.StringVar(value='准备读取…')
-        ttk.Label(self.root, textvariable=self.status, padding=(12, 5),
+        ttk.Label(radar_page, textvariable=self.status, padding=(12, 5),
                    wraplength=940, justify='left').pack(fill='x')
-        ttk.Label(self.root, text='候选数量仅代表当前读取范围。车型与等级按当前版本车包表识别；雷达车头朝上，随车辆朝向旋转。',
+        ttk.Label(radar_page, text='候选数量仅代表当前读取范围。车型与等级按当前版本车包表识别；雷达车头朝上，随车辆朝向旋转。',
                    padding=(12, 5), foreground='#687381').pack(fill='x')
-        frame = ttk.Frame(self.root, padding=(12, 5, 12, 12))
+        frame = ttk.Frame(radar_page, padding=(12, 5, 12, 12))
         frame.pack(fill='both', expand=True)
         columns = ('level', 'car', 'x', 'y', 'z', 'distance', 'row', 'identity')
         self.table = ttk.Treeview(frame, columns=columns, show='headings', selectmode='browse')
@@ -171,6 +179,11 @@ class Application:
         self.table.configure(yscrollcommand=scrollbar.set)
         self.table.pack(side='left', fill='both', expand=True)
         scrollbar.pack(side='right', fill='y')
+        from fh5_upgrade_panel import UpgradePanel, Level10Panel
+        store = getattr(runtime, 'store', None)
+        self.upgrade_panel = UpgradePanel(upgrade_page, getattr(store, 'source_snapshot', None))
+        self.level10_panel = Level10Panel(level10_page, getattr(store, 'source_snapshot', None),
+                                         catalog=self.upgrade_panel.catalog,service=self.upgrade_panel.service)
         self.overlay = RadarOverlay(self.root, config)
         self.map_overlay = MapOverlay(self.root)
         self._set_visibility()
@@ -187,7 +200,7 @@ class Application:
 
     @staticmethod
     def _opening_stats_text(status):
-        count, target = status.get('count', 0), status.get('target', 50)
+        count, target = status.get('count', 0), status.get('target', 200)
         if status.get('error'):
             return f'统计保存失败（雷达继续运行）：{status["error"]}'
         if count >= target:
@@ -219,7 +232,7 @@ class Application:
         try:
             snapshot = self.runtime.snapshot() if snapshot is None else snapshot
             if snapshot.get('replay') is True:
-                self.stats_status.set('离线回放不计入50局统计')
+                self.stats_status.set('离线回放不计入200局统计')
                 return
             session = snapshot.get('session_key')
             if not session:
@@ -401,6 +414,11 @@ class Application:
             self._tick_opening_stats(snapshot, now)
             if now >= self.table_next:
                 self.table_next = now + 0.5
+                panel = getattr(self, 'upgrade_panel', None)
+                if panel is not None:
+                    panel.tick()
+                level10_panel = getattr(self, 'level10_panel', None)
+                if level10_panel is not None:level10_panel.tick()
                 self._refresh_table(snapshot)
                 age = snapshot.get('telemetry_age')
                 age_text = f'{age:.1f}s' if isinstance(age, (int, float)) else '无'
@@ -433,6 +451,9 @@ class Application:
         if self.closed:
             return
         self.closed = True
+        panel = getattr(self, 'upgrade_panel', None)
+        if panel is not None:
+            panel.close()
         self.recorder.close()
         collector = getattr(self, 'opening_stats', None)
         if collector is not None:

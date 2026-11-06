@@ -524,5 +524,37 @@ class HotRangeTests(unittest.TestCase):
         self.assertEqual(len(locator.inactive_hint_regions), 2)
 
 
+class SavedEvidenceTests(unittest.TestCase):
+    def test_saved_static_pan_zoom_closed_and_reopened_raw(self):
+        root = Path(__file__).resolve().parents[1]/'state'/'map_calibration_5360'
+        if not (root/'open_detail.json').exists():
+            self.skipTest('local saved game evidence not part of portable source tests')
+        totals = {}
+        for name in ('open_detail.json', 'pan_detail.json', 'zoom_detail.json', 'closed_detail.json'):
+            report = json.loads((root/name).read_text(encoding='utf-8'))
+            accepted = []
+            for snapshot in report['snapshots']:
+                raw = Path(snapshot['raw']['file']).read_bytes()
+                self.assertEqual(hashlib.sha256(raw).hexdigest(), snapshot['raw']['sha256'])
+                decoded = decode_camera(raw, snapshot['raw_address'], snapshot['base'], snapshot['sample_monotonic'])
+                if decoded is not None:
+                    accepted.append(snapshot['base'])
+            totals[name] = len(accepted)
+            if accepted:
+                self.assertEqual(set(accepted), {0x138a04dbe40})
+        self.assertEqual(totals, {'open_detail.json': 4, 'pan_detail.json': 4,
+                                  'zoom_detail.json': 4, 'closed_detail.json': 0})
+        report = json.loads((root/'reopen_hot_scan.json').read_text(encoding='utf-8'))
+        accepted = []
+        for candidate in report['candidates']:
+            if 'detail_raw' not in candidate:
+                continue
+            raw = Path(candidate['detail_raw']['file']).read_bytes()
+            self.assertEqual(hashlib.sha256(raw).hexdigest(), candidate['detail_raw']['sha256'])
+            if decode_camera(raw, candidate['detail_address'], candidate['base'], candidate['sample_monotonic']):
+                accepted.append(candidate['base'])
+        self.assertEqual(accepted, [0x138a04d0950])
+
+
 if __name__ == '__main__':
     unittest.main()

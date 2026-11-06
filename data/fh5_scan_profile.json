@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "package_version": "3.688.109.0",
+  "region_shapes": [
+    {
+      "size": 5898240,
+      "type": 131072,
+      "protect": 4
+    }
+  ],
+  "note": "Address-free size/type/protection observed for a validated owner. Ordering heuristic only, not an object locator or a cross-session address.",
+  "source": "Xbox PC 3.688.109.0 scan profile"
+}

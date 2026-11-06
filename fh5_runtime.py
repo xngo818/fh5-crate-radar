@@ -803,8 +803,7 @@ class Runtime:
                 if not isinstance(sample, dict):
                     raise ValueError('Map service snapshot must be a dict')
                 map_status.update({key: sample[key] for key in
-                                    ('map_state', 'reason', 'map_frame', 'tracker_status', 'map_timing',
-                                     'error', 'alignment_profile_status') if key in sample})
+                                    ('map_state', 'reason', 'map_frame', 'tracker_status', 'map_timing') if key in sample})
             except Exception as error:
                 map_status.update(reason='map_service_snapshot_failed', error=str(error), map_frame=None)
         elif self._map_start_error:
@@ -975,17 +974,10 @@ class Runtime:
         if not force and now < self._next_scan_status:
             return
         self._next_scan_status = now + 1.0
-        snapshot = self.snapshot()
+        snapshot = self.store.snapshot()
         document = {key: snapshot.get(key) for key in
-                    ('session_key', 'game_version', 'process_pid', 'state', 'memory_state',
-                      'last_error', 'scan_progress', 'memory_timing', 'map_state', 'map_reason',
-                      'map_timing')}
-        # Ordinary desktop launches need camera diagnostics too. Keep one small
-        # overwritten file, without frame matrices or the candidate payloads.
-        map_status = snapshot.get('map_status') or {}
-        document.update(map_tracker=map_status.get('tracker_status'),
-                        map_error=map_status.get('error'),
-                        map_diagnostic_revision='first-map-v10')
+                     ('session_key', 'game_version', 'process_pid', 'state', 'memory_state',
+                      'last_error', 'scan_progress', 'memory_timing')}
         document.update(schema_version=1, revision='cold-start-v5',
                         scope_cache=self._scope_load_status,
                         fresh_row_count=len(snapshot.get('rows') or []))
