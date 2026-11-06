@@ -1,24 +1,28 @@
-# FH5 Crate Radar — Windows releases
+# FH5 车包雷达 2.0
 
-[Download a release](https://github.com/xngo818/fh5-crate-radar/releases/tag/1.1.1) · [Browse source](https://github.com/xngo818/fh5-crate-radar/tree/source)
+适用于《极限竞速：地平线 5》淘汰之王。雷达显示附近已识别的车包和等级，地图可叠加它们的位置。2.0 在雷达之外增加了两项独立设置：**提前选好逐级升级的候选车**，以及**指定当前 10 级车在同级换车时的目标**。
 
-This branch contains release notes and download instructions. ZIP packages belong
-in GitHub Releases assets; Python source is maintained on the `source` branch.
+**[下载 Windows 64 位版](https://github.com/xngo818/fh5-crate-radar/releases/download/2.0/FH5-Crate-Radar-2.0-Windows-x64.zip)** · [2.0 发布说明](https://github.com/xngo818/fh5-crate-radar/releases/tag/2.0) · [查看旧版本](https://github.com/xngo818/fh5-crate-radar/releases)
 
-## first-map-v10
+## 开始使用
 
-Improves initial map camera detection and scanning recovery while retaining
-vehicle-level sorting, statistics, and scan caching.
+1. 下载并完整解压 ZIP，双击 `FH5CrateCoordinatesUpgradeV5.exe`。2.0 使用内部 V5 构建，文件名保留 V5；Windows 版不需要另装 Python。
+2. 游戏中开启 **Data Out**，目标 IP 设为 `127.0.0.1`，UDP 端口设为 `53005`。当前适配 **Xbox / Microsoft Store PC 版 `3.688.109.0`**；本包未验证 Steam 版或其他版本。
+3. 从旧版升级时，先退出旧程序，把原程序旁的 `state` 文件夹复制到新程序旁，即可保留设置与统计。不要同时运行两版。
 
-Download `FH5-Crate-Radar-first-map-v10-Windows.zip` from the release assets,
-extract the entire archive, and run `FH5CrateCoordinates.exe`.
-When upgrading, close the old program and keep its `state` folder to preserve
-settings and local data.
+只用雷达和地图时，不用打开选车开关。雷达默认按手柄 `X` 或键盘 `F9` 切换，地图默认按手柄 `Y` 切换。
 
-Target: Windows, Forza Horizon 5 Xbox PC build **3.688.109.0**.
-Data Out: **127.0.0.1:53005** over UDP.
+## 两种选车怎么用
 
-The 2026-10-26 build passed 443 project tests and 38 frozen-camera tests.
-First-match map behavior still awaits in-game verification.
-The source edition uses fallback graphics; the existing Windows package retains
-its bundled graphics and is not a byte-for-byte build of that source edition.
+| 想做什么 | 在哪里设置 | 游戏里怎么选 |
+| --- | --- | --- |
+| 指定普通升级的候选车 | 在「升级选车」页为升到 2–10 级分别选车，勾选「启用升级选车」。没指定的等级保留「保持随机」。 | 等页面显示「已接入」并读出当前车和下一辆车。单挑获胜后选「升级车辆」。这里的“升到 10 级”指 **9→10**。 |
+| 给当前 10 级车指定换车目标 | 在「10级换车」页，给当前车型选另一辆 10 级车，并勾选「启用10级换车规则（实验）」。每辆车的规则单独保存。 | 获胜后先核对菜单车型，显示目标再确认换车。**实测首次获胜仍显示原候选；保留当前车后，第二次获胜菜单才显示指定车型。** |
+
+选车开关启动时默认关闭，已保存的车型设置会保留。开启后，工具会改写游戏中的待选车型记录。「10级目标已准备」表示记录已写入并读回；已经打开的换车菜单可能仍显示旧值。选择「拿对手车」不属于这两项设置。
+
+## 换局后一直在定位？
+
+2.0 会优先在上一局读到记录的附近重新搜索；旧区域失效后会继续往后找。若下一局的记录出现在更远的位置，仍需等待全局搜索，不能保证固定秒数。可在程序旁的 `state/upgrade_events.jsonl` 查看搜索进度。
+
+[本版源码](https://github.com/xngo818/fh5-crate-radar/tree/2.0) · [版本记录](CHANGELOG.md) · [1.1.1 下载页](https://github.com/xngo818/fh5-crate-radar/releases/tag/1.1.1)
